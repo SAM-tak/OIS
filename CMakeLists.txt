@@ -49,6 +49,7 @@ set(ois_source
     "${CMAKE_CURRENT_SOURCE_DIR}/src/OISKeyboard.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/OISForceFeedback.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/OISException.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/OISFFI.cpp"
 )
 
 set(ois_headers
