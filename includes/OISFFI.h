@@ -30,9 +30,10 @@ restrictions:
 extern "C" {
 #endif
 
-OISExport intptr_t OIS_FFI OIS_InputManager_Create(intptr_t);
 
-OISExport void OIS_FFI OIS_InputManager_Destroy(intptr_t);
+OISExport intptr_t OIS_FFI OIS_CreateInputManager(intptr_t);
+
+OISExport void OIS_FFI OIS_DestroyInputManager(intptr_t);
 
 OISExport int OIS_FFI OIS_InputManager_GetNumberOfDevices(intptr_t inputManager, int iType);
 
@@ -62,13 +63,15 @@ OISExport int OIS_FFI OIS_Mouse_GetPosition(intptr_t inputObject, int axis, int 
 
 OISExport bool OIS_FFI OIS_Mouse_IsButtonDown(intptr_t inputObject, int button);
 
+OISExport int OIS_FFI OIS_JoyStick_GetNumberOfComponents(intptr_t inputObject, int componentType);
+
 OISExport unsigned long OIS_FFI OIS_JoyStick_GetButtons(intptr_t inputObject);
 
-OISExport int OIS_FFI OIS_JoyStick_GetNumberOfComponents(intptr_t inputObject, int componentType);
+OISExport int OIS_FFI OIS_JoyStick_GetAxis(intptr_t inputObject, int index, int type);
 
 OISExport int OIS_FFI OIS_JoyStick_GetPOV(intptr_t inputObject, int index);
 
-OISExport int OIS_FFI OIS_JoyStick_GetSlider(intptr_t inputObject, int index);
+OISExport int OIS_FFI OIS_JoyStick_GetSlider(intptr_t inputObject, int index, int axis);
 
 OISExport float OIS_FFI OIS_JoyStick_GetVector(intptr_t inputObject, int index, int axis);
 

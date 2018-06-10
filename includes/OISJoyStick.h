@@ -27,6 +27,7 @@ following restrictions:
 #define OIS_Joystick_H
 #include "OISObject.h"
 #include "OISEvents.h"
+#include <bitset>
 
 namespace OIS
 {
