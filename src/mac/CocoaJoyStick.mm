@@ -90,6 +90,9 @@ void CocoaJoyStick::capture()
 	{
 		switch(event.type)
 		{
+            default:
+            break;
+            
 			case kIOHIDElementTypeInput_Button:
 			{
 				std::vector<IOHIDElementCookie>::iterator buttonIt = std::find(mCookies.buttonCookies.begin(), mCookies.buttonCookies.end(), event.elementCookie);

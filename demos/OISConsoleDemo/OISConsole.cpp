@@ -225,8 +225,8 @@ int main()
 				DispatchMessage(&msg);
 			}
 #elif defined OIS_LINUX_PLATFORM
-			   checkX11Events();
-			   usleep(500);
+            checkX11Events();
+            usleep(500);
 #elif defined OIS_APPLE_PLATFORM
 			checkMacEvents();
 			usleep(500);
@@ -289,8 +289,6 @@ int main()
 
 void doStartup()
 {
-	ParamList pl;
-
 #if defined OIS_WIN32_PLATFORM
 	//Create a capture window for Input Grabbing
 	hWnd = CreateDialog(nullptr, MAKEINTRESOURCE(IDD_DIALOG1), nullptr, (DLGPROC)DlgProc);
@@ -301,8 +299,6 @@ void doStartup()
 
 	std::ostringstream wnd;
 	wnd << (size_t)hWnd;
-
-	pl.insert(std::make_pair(std::string("WINDOW"), wnd.str()));
 
 	//Default mode is foreground exclusive..but, we want to show mouse - so nonexclusive
 //	pl.insert(std::make_pair(std::string("w32_mouse"), std::string("DISCL_FOREGROUND" )));
@@ -329,8 +325,6 @@ void doStartup()
 
 	std::ostringstream wnd;
 	wnd << xWin;
-
-	pl.insert(std::make_pair(std::string("WINDOW"), wnd.str()));
 
 	//For this demo, show mouse and do not grab (confine to window)
 //	pl.insert(std::make_pair(std::string("x11_mouse_grab"), std::string("false")));
@@ -366,13 +360,15 @@ void doStartup()
 	[window setTitle:@"OIS Input"];
 	[window makeKeyAndOrderFront:nil];
 	[NSApp activateIgnoringOtherApps:YES];
-	//	[NSApp run];
-
+    
 	//Apparently the "id" type the window variable was declared into boils down to a simple pointer.
 	//To give it to OIS, put the numerical value of the pointer into a string, as you do with Windows and Linux
-	pl.insert(std::make_pair(std::string("WINDOW"), std::to_string((size_t)window)));
-
+    std::ostringstream wnd;
+    wnd << (size_t)window;
 #endif
+
+    ParamList pl;
+    pl.insert(std::make_pair(std::string("WINDOW"), std::to_string((size_t)window)));
 
 	//This never returns null.. it will raise an exception on errors
 	g_InputManager = InputManager::createInputSystem(pl);
