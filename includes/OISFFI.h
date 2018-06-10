@@ -38,22 +38,39 @@ OISExport int OIS_FFI OIS_InputManager_GetNumberOfDevices(intptr_t inputManager,
 
 OISExport void OIS_FFI OIS_InputManager_EnableAddOnFactory(intptr_t inputManager);
 
-OISExport intptr_t OIS_FFI OIS_InputManager_CreateInputObject(intptr_t inputManager, int iType, bool buffered);
+typedef void (OIS_InputManager_EnumrateFreeDeviceCallback)(int type, const char *vendor);
+
+OISExport void OIS_FFI OIS_InputManager_EnumrateFreeDevice(intptr_t inputManager, OIS_InputManager_EnumrateFreeDeviceCallback cb);
+
+OISExport intptr_t OIS_FFI OIS_InputManager_CreateInputObject(intptr_t inputManager, int iType, const char *vendor);
 
 OISExport void OIS_FFI OIS_InputManager_DestroyInputObject(intptr_t inputManager, intptr_t inputObject);
 
-
 OISExport bool OIS_FFI OIS_InputObject_GetVenderString(intptr_t inputObject, char* buf, size_t bufsize);
-
-OISExport bool OIS_FFI OIS_InputObject_Buffered(intptr_t inputObject);
-
-OISExport void OIS_FFI OIS_InputObject_SetBuffered(intptr_t inputObject, bool bufferd);
 
 OISExport intptr_t OIS_FFI OIS_InputObject_GetCreator(intptr_t inputObject);
 
 OISExport void OIS_FFI OIS_InputObject_Capture(intptr_t inputObject);
 
 OISExport int OIS_FFI OIS_InputObject_GetID(intptr_t inputObject);
+
+OISExport bool OIS_FFI OIS_Keyboard_IsKeyDown(intptr_t inputObject, int keyCode);
+
+OISExport bool OIS_FFI OIS_Keyboard_IsModifierDown(intptr_t inputObject, int modifierKeyCode);
+
+OISExport int OIS_FFI OIS_Mouse_GetPosition(intptr_t inputObject, int axis, int type);
+
+OISExport bool OIS_FFI OIS_Mouse_IsButtonDown(intptr_t inputObject, int button);
+
+OISExport unsigned long OIS_FFI OIS_JoyStick_GetButtons(intptr_t inputObject);
+
+OISExport int OIS_FFI OIS_JoyStick_GetNumberOfComponents(intptr_t inputObject, int componentType);
+
+OISExport int OIS_FFI OIS_JoyStick_GetPOV(intptr_t inputObject, int index);
+
+OISExport int OIS_FFI OIS_JoyStick_GetSlider(intptr_t inputObject, int index);
+
+OISExport float OIS_FFI OIS_JoyStick_GetVector(intptr_t inputObject, int index, int axis);
 
 #if __cplusplus
 }

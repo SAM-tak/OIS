@@ -62,7 +62,7 @@ namespace OIS
 		@param type
 			The type of interface you are looking for
 		*/
-		virtual Interface* queryInterface(Interface::IType type) = 0;
+		virtual Interface* queryInterface(Interface::Type type) = 0;
 
 		/**	@remarks Internal... Do not call this directly. */
 		virtual void _initialize() = 0;

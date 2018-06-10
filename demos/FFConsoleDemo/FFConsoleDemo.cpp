@@ -293,7 +293,7 @@ public:
 				 << "' (Id=" << pJoy->getID() << ")";
 
 			// Check for FF, and if so, keep the joy and dump FF info
-			ForceFeedback* pFFDev = (ForceFeedback*)pJoy->queryInterface(Interface::ForceFeedback);
+			ForceFeedback* pFFDev = (ForceFeedback*)pJoy->queryInterface(Interface::TypeForceFeedback);
 			if(pFFDev)
 			{
 				_bFFFound = true;

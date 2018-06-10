@@ -34,12 +34,12 @@ namespace OIS
 	class OISExport Interface
 	{
 	public:
-		virtual ~Interface(){};
+		virtual ~Interface() = default;
 
 		//! Type of Interface
-		enum IType {
-			ForceFeedback,
-			Reserved
+		enum Type {
+			TypeForceFeedback,
+			TypeReserved
 		};
 	};
 }

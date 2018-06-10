@@ -175,8 +175,7 @@ DeviceList Win32InputManager::freeDeviceList()
 	if(mouseUsed == false)
 		ret.insert(std::make_pair(OISMouse, mInputSystemName));
 
-	for(JoyStickInfoList::iterator i = unusedJoyStickList.begin(); i != unusedJoyStickList.end(); ++i)
-		ret.insert(std::make_pair(OISJoyStick, i->vendor));
+	for(auto i : unusedJoyStickList) ret.insert(std::make_pair(OISJoyStick, i.vendor));
 
 	return ret;
 }

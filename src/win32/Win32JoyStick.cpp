@@ -98,7 +98,7 @@ void Win32JoyStick::_initialize()
 	else
 	{
 		//Clear old state
-		mState.mAxes.clear();
+		mState.clear();
 
 		delete mFfDevice;
 		mFfDevice = 0;
@@ -139,10 +139,9 @@ void Win32JoyStick::_enumerate()
 {
 	if(mJoyInfo.isXInput)
 	{
-		mPOVs = 1;
-
-		mState.mButtons.resize(XINPUT_TRANSLATED_BUTTON_COUNT);
-		mState.mAxes.resize(XINPUT_TRANSLATED_AXIS_COUNT);
+		mPOVCount = 1;
+		mButtonCount = XINPUT_TRANSLATED_BUTTON_COUNT;
+		mAxisCount = XINPUT_TRANSLATED_AXIS_COUNT;
 	}
 	else
 	{
@@ -151,10 +150,10 @@ void Win32JoyStick::_enumerate()
 		if(FAILED(mJoyStick->GetCapabilities(&mDIJoyCaps)))
 			OIS_EXCEPT(E_General, "Win32JoyStick::_enumerate >> Failed to get capabilities");
 
-		mPOVs = (short)mDIJoyCaps.dwPOVs;
+		mPOVCount = (short)mDIJoyCaps.dwPOVs;
 
-		mState.mButtons.resize(mDIJoyCaps.dwButtons);
-		mState.mAxes.resize(mDIJoyCaps.dwAxes);
+		mButtonCount = mDIJoyCaps.dwButtons;
+		mAxisCount = mDIJoyCaps.dwAxes;
 
 		//Reset the axis mapping enumeration value
 		_AxisNumber = 0;
@@ -184,10 +183,10 @@ BOOL CALLBACK Win32JoyStick::DIEnumDeviceObjectsCallback(LPCDIDEVICEOBJECTINSTAN
 	//Check if axis is slider, if so, do not treat as regular axis
 	if(GUID_Slider == lpddoi->guidType)
 	{
-		++_this->mSliders;
+		++_this->mSliderCount;
 
 		//Decrease Axes, since this slider shows up in a different place
-		_this->mState.mAxes.pop_back();
+		--_this->mAxisCount;
 	}
 	else if(FAILED(_this->mJoyStick->SetProperty(DIPROP_APPDATA, &diptr.diph)))
 	{ //If for some reason we could not set needed user data, just ignore this axis
@@ -204,8 +203,8 @@ BOOL CALLBACK Win32JoyStick::DIEnumDeviceObjectsCallback(LPCDIDEVICEOBJECTINSTAN
 	diprg.diph.dwHeaderSize = sizeof(DIPROPHEADER);
 	diprg.diph.dwHow		= DIPH_BYID;
 	diprg.diph.dwObj		= lpddoi->dwType;
-	diprg.lMin				= MIN_AXIS;
-	diprg.lMax				= MAX_AXIS;
+	diprg.lMin				= MIN_AXIS_VALUE;
+	diprg.lMax				= MAX_AXIS_VALUE;
 
 	if(FAILED(_this->mJoyStick->SetProperty(DIPROP_RANGE, &diprg.diph)))
 		OIS_EXCEPT(E_General, "Win32JoyStick::_DIEnumDeviceObjectsCallback >> Failed to set min/max range property");
@@ -351,9 +350,9 @@ void Win32JoyStick::capture()
 				else if((short)(diBuff[i].uAppData >> 16) == 0x1313)
 				{													   //If it was nothing else, might be axis enumerated earlier (determined by magic number)
 					int axis = (int)(0x0000FFFF & diBuff[i].uAppData); //Mask out the high bit
-					assert(axis >= 0 && axis < (int)mState.mAxes.size() && "Axis out of range!");
+					assert(axis >= 0 && axis < mAxisCount && "Axis out of range!");
 
-					if(axis >= 0 && axis < (int)mState.mAxes.size())
+					if(axis >= 0 && axis < mAxisCount)
 					{
 						mState.mAxes[axis].abs = diBuff[i].dwData;
 						axisMoved[axis]		   = true;
@@ -424,8 +423,8 @@ void Win32JoyStick::captureXInput()
 
 	//Left trigger
 	value = inputState.Gamepad.bLeftTrigger * 129;
-	if(value > JoyStick::MAX_AXIS)
-		value = JoyStick::MAX_AXIS;
+	if(value > JoyStick::MAX_AXIS_VALUE)
+		value = JoyStick::MAX_AXIS_VALUE;
 
 	mState.mAxes[4].rel = value - mState.mAxes[4].abs;
 	mState.mAxes[4].abs = value;
@@ -434,8 +433,8 @@ void Win32JoyStick::captureXInput()
 
 	//Right trigger
 	value = (int)inputState.Gamepad.bRightTrigger * 129;
-	if(value > JoyStick::MAX_AXIS)
-		value = JoyStick::MAX_AXIS;
+	if(value > JoyStick::MAX_AXIS_VALUE)
+		value = JoyStick::MAX_AXIS_VALUE;
 
 	mState.mAxes[5].rel = value - mState.mAxes[5].abs;
 	mState.mAxes[5].abs = value;
@@ -443,8 +442,8 @@ void Win32JoyStick::captureXInput()
 		axisMoved[5] = true;
 
 	//POV
-	int previousPov = mState.mPOV[0].direction;
-	int& pov		= mState.mPOV[0].direction;
+	int previousPov = mState.mPOVs[0].direction;
+	int& pov		= mState.mPOVs[0].direction;
 	pov				= Pov::Centered;
 	if(inputState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP)
 		pov |= Pov::North;
@@ -456,8 +455,7 @@ void Win32JoyStick::captureXInput()
 		pov |= Pov::East;
 
 	//Buttons - The first 4 buttons don't need to be checked since they represent the dpad
-	bool previousButtons[XINPUT_TRANSLATED_BUTTON_COUNT];
-	std::copy(mState.mButtons.begin(), mState.mButtons.end(), previousButtons);
+	std::bitset<JoyStickState::MAX_BUTTONS> previousButtons = mState.mButtons;
 	for(size_t i = 0; i < XINPUT_TRANSLATED_BUTTON_COUNT; i++)
 		mState.mButtons[i] = (inputState.Gamepad.wButtons & (1 << (i + 4))) != 0;
 
@@ -521,20 +519,20 @@ bool Win32JoyStick::_changePOV(int pov, DIDEVICEOBJECTDATA& di)
 	//for the center position
 	if(LOWORD(di.dwData) == 0xFFFF)
 	{
-		mState.mPOV[pov].direction = Pov::Centered;
+		mState.mPOVs[pov].direction = Pov::Centered;
 	}
 	else
 	{
 		switch(di.dwData)
 		{
-			case 0: mState.mPOV[pov].direction = Pov::North; break;
-			case 4500: mState.mPOV[pov].direction = Pov::NorthEast; break;
-			case 9000: mState.mPOV[pov].direction = Pov::East; break;
-			case 13500: mState.mPOV[pov].direction = Pov::SouthEast; break;
-			case 18000: mState.mPOV[pov].direction = Pov::South; break;
-			case 22500: mState.mPOV[pov].direction = Pov::SouthWest; break;
-			case 27000: mState.mPOV[pov].direction = Pov::West; break;
-			case 31500: mState.mPOV[pov].direction = Pov::NorthWest; break;
+			case 0: mState.mPOVs[pov].direction = Pov::North; break;
+			case 4500: mState.mPOVs[pov].direction = Pov::NorthEast; break;
+			case 9000: mState.mPOVs[pov].direction = Pov::East; break;
+			case 13500: mState.mPOVs[pov].direction = Pov::SouthEast; break;
+			case 18000: mState.mPOVs[pov].direction = Pov::South; break;
+			case 22500: mState.mPOVs[pov].direction = Pov::SouthWest; break;
+			case 27000: mState.mPOVs[pov].direction = Pov::West; break;
+			case 31500: mState.mPOVs[pov].direction = Pov::NorthWest; break;
 		}
 	}
 
@@ -551,9 +549,9 @@ void Win32JoyStick::setBuffered(bool buffered)
 }
 
 //--------------------------------------------------------------------------------------------------//
-Interface* Win32JoyStick::queryInterface(Interface::IType type)
+Interface* Win32JoyStick::queryInterface(Interface::Type type)
 {
-	if(mFfDevice && type == Interface::ForceFeedback)
+	if(mFfDevice && type == Interface::TypeForceFeedback)
 		return mFfDevice;
 	else
 		return 0;

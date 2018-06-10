@@ -150,11 +150,9 @@ void InputManager::destroyInputSystem(InputManager* manager)
 		return;
 
 	//Cleanup before deleting...
-	for(FactoryCreatedObject::iterator i = manager->mFactoryObjects.begin();
-		i != manager->mFactoryObjects.end();
-		++i)
+	for(auto i : manager->mFactoryObjects)
 	{
-		i->second->destroyObject(i->first);
+		i.second->destroyObject(i.first);
 	}
 
 	manager->mFactoryObjects.clear();
@@ -172,9 +170,8 @@ int InputManager::getNumberOfDevices(Type iType)
 {
 	//Count up all the factories devices
 	int factoyObjects		= 0;
-	FactoryList::iterator i = mFactories.begin(), e = mFactories.end();
-	for(; i != e; ++i)
-		factoyObjects += (*i)->totalDevices(iType);
+	for(auto i : mFactories)
+		factoyObjects += i->totalDevices(iType);
 
 	return factoyObjects;
 }
@@ -183,10 +180,9 @@ int InputManager::getNumberOfDevices(Type iType)
 DeviceList InputManager::listFreeDevices()
 {
 	DeviceList list;
-	FactoryList::iterator i = mFactories.begin(), e = mFactories.end();
-	for(; i != e; ++i)
+	for(auto i : mFactories)
 	{
-		DeviceList temp = (*i)->freeDeviceList();
+		DeviceList temp = i->freeDeviceList();
 		list.insert(temp.begin(), temp.end());
 	}
 
@@ -197,15 +193,14 @@ DeviceList InputManager::listFreeDevices()
 Object* InputManager::createInputObject(Type iType, bool bufferMode, const std::string& vendor)
 {
 	Object* obj				= 0;
-	FactoryList::iterator i = mFactories.begin(), e = mFactories.end();
-	for(; i != e; ++i)
+	for(auto i : mFactories)
 	{
-		if((*i)->freeDevices(iType) > 0)
+		if(i->freeDevices(iType) > 0)
 		{
-			if(vendor == "" || (*i)->vendorExist(iType, vendor))
+			if(vendor.empty() || i->vendorExist(iType, vendor))
 			{
-				obj					 = (*i)->createObject(this, iType, bufferMode, vendor);
-				mFactoryObjects[obj] = (*i);
+				obj					 = i->createObject(this, iType, bufferMode, vendor);
+				mFactoryObjects[obj] = i;
 				break;
 			}
 		}
@@ -233,7 +228,7 @@ void InputManager::destroyInputObject(Object* obj)
 	if(obj == 0)
 		return;
 
-	FactoryCreatedObject::iterator i = mFactoryObjects.find(obj);
+	auto i = mFactoryObjects.find(obj);
 	if(i != mFactoryObjects.end())
 	{
 		i->second->destroyObject(obj);
@@ -258,7 +253,7 @@ void InputManager::removeFactoryCreator(FactoryCreator* factory)
 	if(factory != 0)
 	{
 		//First, destroy all devices created with the factory
-		for(FactoryCreatedObject::iterator i = mFactoryObjects.begin(); i != mFactoryObjects.end(); ++i)
+		for(auto i = mFactoryObjects.begin(); i != mFactoryObjects.end(); ++i)
 		{
 			if(i->second == factory)
 			{
@@ -268,7 +263,7 @@ void InputManager::removeFactoryCreator(FactoryCreator* factory)
 		}
 
 		//Now, remove the factory itself
-		FactoryList::iterator fact = std::find(mFactories.begin(), mFactories.end(), factory);
+		auto fact = std::find(mFactories.begin(), mFactories.end(), factory);
 		if(fact != mFactories.end())
 			mFactories.erase(fact);
 	}

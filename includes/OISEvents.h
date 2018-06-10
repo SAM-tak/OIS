@@ -32,9 +32,8 @@ namespace OIS
 	class OISExport EventArg
 	{
 	public:
-		explicit EventArg(Object* obj) :
-		 device(obj) {}
-		virtual ~EventArg() {}
+		explicit EventArg(Object* obj) : device(obj) {}
+		virtual ~EventArg() = default;
 
 		//! Pointer to the Input Device
 		const Object* device;

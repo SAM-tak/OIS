@@ -212,7 +212,7 @@ namespace OIS
 	class OISExport Keyboard : public Object
 	{
 	public:
-		virtual ~Keyboard(){};
+		virtual ~Keyboard() = default;
 
 		/**
 		@remarks

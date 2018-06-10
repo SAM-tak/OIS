@@ -41,7 +41,7 @@ namespace OIS
 		virtual void capture();
 
 		/** @copydoc Object::queryInterface */
-		virtual Interface* queryInterface(Interface::IType type)
+		virtual Interface* queryInterface(Interface::Type type)
 		{
 			OIS_UNUSED(type);
 			return 0;

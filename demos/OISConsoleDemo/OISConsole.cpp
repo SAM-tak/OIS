@@ -130,7 +130,7 @@ public:
 	bool axisMoved(const JoyStickEvent& arg, int axis)
 	{
 		//Provide a little dead zone
-		if(arg.state.mAxes[axis].abs > 2500 || arg.state.mAxes[axis].abs < -2500)
+		if(arg.state.mAxes[axis].abs > 2500 || arg.state.mAxes[axis].abs < -2500 || std::abs(arg.state.mAxes[axis].rel) > 2500)
 			std::cout << std::endl
 					  << arg.device->vendor() << ". Axis # " << axis << " Value: " << arg.state.mAxes[axis].abs;
 		return true;
@@ -140,17 +140,17 @@ public:
 		std::cout << std::endl
 				  << arg.device->vendor() << ". POV" << pov << " ";
 
-		if(arg.state.mPOV[pov].direction & Pov::North) //Going up
+		if(arg.state.mPOVs[pov].direction & Pov::North) //Going up
 			std::cout << "North";
-		else if(arg.state.mPOV[pov].direction & Pov::South) //Going down
+		else if(arg.state.mPOVs[pov].direction & Pov::South) //Going down
 			std::cout << "South";
 
-		if(arg.state.mPOV[pov].direction & Pov::East) //Going right
+		if(arg.state.mPOVs[pov].direction & Pov::East) //Going right
 			std::cout << "East";
-		else if(arg.state.mPOV[pov].direction & Pov::West) //Going left
+		else if(arg.state.mPOVs[pov].direction & Pov::West) //Going left
 			std::cout << "West";
 
-		if(arg.state.mPOV[pov].direction == Pov::Centered) //stopped/centered out
+		if(arg.state.mPOVs[pov].direction == Pov::Centered) //stopped/centered out
 			std::cout << "Centered";
 		return true;
 	}
@@ -385,7 +385,7 @@ void doStartup()
 	}
 	catch(OIS::Exception& ex)
 	{
-		std::cout << "\nException raised on joystick creation: " << ex.eText << std::endl;
+		std::cerr << "\nException raised on joystick creation: " << ex.eText << std::endl;
 	}
 }
 
@@ -414,7 +414,7 @@ void handleNonBufferedJoy(JoyStick* js)
 {
 	//Just dump the current joy state
 	const JoyStickState& joy = js->getJoyStickState();
-	for(unsigned int i = 0; i < joy.mAxes.size(); ++i)
+	for(int i = 0; i < js->getNumberOfComponents(OIS_Axis); ++i)
 		std::cout << "\nAxis " << i << " X: " << joy.mAxes[i].abs;
 }
 
