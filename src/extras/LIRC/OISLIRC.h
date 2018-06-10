@@ -54,7 +54,7 @@ namespace OIS
 #define OIS_LIRC_EVENT_BUFFER 16
 
 	/**	Specialty joystick - Linux Infrared Remote Support */
-	class _OISExport LIRCControl : public JoyStick
+	class OISExport LIRCControl : public JoyStick
 	{
 		friend class LIRCFactoryCreator;
 

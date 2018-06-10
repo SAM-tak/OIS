@@ -34,7 +34,7 @@ namespace OIS
 #define OIS_JOYSTICK_VECTOR3_DEFAULT 2.28f
 
 	//! POV / HAT Joystick component
-	class _OISExport Pov : public Component
+	class OISExport Pov : public Component
 	{
 	public:
 		Pov() :
@@ -54,7 +54,7 @@ namespace OIS
 	};
 
 	//! A sliding axis - only used in Win32 Right Now
-	class _OISExport Slider : public Component
+	class OISExport Slider : public Component
 	{
 	public:
 		Slider() :
@@ -68,7 +68,7 @@ namespace OIS
 		All members are valid for both buffered and non buffered mode
 		Sticks with zero values are not present on the device
 	*/
-	class _OISExport JoyStickState
+	class OISExport JoyStickState
 	{
 	public:
 		//! Constructor
@@ -117,7 +117,7 @@ namespace OIS
 	};
 
 	/** Specialised for joystick events */
-	class _OISExport JoyStickEvent : public EventArg
+	class OISExport JoyStickEvent : public EventArg
 	{
 	public:
 		JoyStickEvent(Object* obj, const JoyStickState& st) :
@@ -139,7 +139,7 @@ namespace OIS
 		to differentiate between connected joysticks. Of course, each can have a seperate
 		callback instead.
 	*/
-	class _OISExport JoyStickListener
+	class OISExport JoyStickListener
 	{
 	public:
 		virtual ~JoyStickListener() { }
@@ -182,7 +182,7 @@ namespace OIS
 		Joystick base class. To be implemented by specific system (ie. DirectX joystick)
 		This class is useful as you remain OS independent using this common interface.
 	*/
-	class _OISExport JoyStick : public Object
+	class OISExport JoyStick : public Object
 	{
 	public:
 		virtual ~JoyStick() { }

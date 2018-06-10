@@ -46,7 +46,7 @@ namespace OIS
 		Represents the state of the mouse
 		All members are valid for both buffered and non buffered mode
 	*/
-	class _OISExport MouseState
+	class OISExport MouseState
 	{
 	public:
 		MouseState() :
@@ -86,7 +86,7 @@ namespace OIS
 	};
 
 	/** Specialised for mouse events */
-	class _OISExport MouseEvent : public EventArg
+	class OISExport MouseEvent : public EventArg
 	{
 	public:
 		MouseEvent(Object* obj, const MouseState& ms) :
@@ -106,7 +106,7 @@ namespace OIS
 		To recieve buffered mouse input, derive a class from this, and implement the
 		methods here. Then set the call back to your Mouse instance with Mouse::setEventCallback
 	*/
-	class _OISExport MouseListener
+	class OISExport MouseListener
 	{
 	public:
 		virtual ~MouseListener() { }
@@ -119,7 +119,7 @@ namespace OIS
 		Mouse base class. To be implemented by specific system (ie. DirectX Mouse)
 		This class is useful as you remain OS independent using this common interface.
 	*/
-	class _OISExport Mouse : public Object
+	class OISExport Mouse : public Object
 	{
 	public:
 		virtual ~Mouse() { }

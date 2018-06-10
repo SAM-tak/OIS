@@ -35,7 +35,7 @@ namespace OIS
 	/**
 		Interface class for dealing with Force Feedback devices
 	*/
-	class _OISExport ForceFeedback : public Interface
+	class OISExport ForceFeedback : public Interface
 	{
 	public:
 		ForceFeedback();
