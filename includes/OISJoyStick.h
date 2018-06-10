@@ -30,8 +30,8 @@ following restrictions:
 
 namespace OIS
 {
-/** @remarks default sensitivity for vector3 component of joystick */
-#define OIS_JOYSTICK_VECTOR3_DEFAULT 2.28f
+	/** @remarks default sensitivity for vector3 component of joystick */
+	static const float OIS_JOYSTICK_VECTOR3_DEFAULT = 2.28f;
 
 	//! POV / HAT Joystick component
 	class OISExport Pov : public Component
@@ -74,43 +74,51 @@ namespace OIS
 		//! Constructor
 		JoyStickState() { clear(); }
 
+		enum Conts {
+			MAX_BUTTONS = 32,
+			MAX_AXES    = 8,
+			MAX_POVS	= 4,
+			MAX_SLIDERS	= 4,
+		};
+
 		//! Represents all the buttons (uses a bitset)
-		std::vector<bool> mButtons;
+		std::bitset<MAX_BUTTONS> mButtons;
 
 		//! Represents all the single axes on the device
-		std::vector<Axis> mAxes;
+		Axis mAxes[MAX_AXES];
 
 		//! Represents the value of a POV. Maximum of 4
-		Pov mPOV[4];
+		Pov mPOVs[MAX_POVS];
 
 		//! Represent the max sliders
-		Slider mSliders[4];
+		Slider mSliders[MAX_SLIDERS];
 
 		//! Represents all Vector type controls the device exports
-		std::vector<Vector3> mVectors;
+		Vector3 mVectors[MAX_AXES];
 
 		//! internal method to reset all variables to initial values
 		void clear()
 		{
-			for(std::vector<bool>::iterator i = mButtons.begin(), e = mButtons.end(); i != e; ++i)
+			mButtons.reset();
+
+			for(int i = 0; i < MAX_AXES; ++i)
 			{
-				(*i) = false;
+				mAxes[i].absOnly = true; //Currently, joysticks only report Absolute values
+				mAxes[i].clear();
 			}
 
-			for(std::vector<Axis>::iterator i = mAxes.begin(), e = mAxes.end(); i != e; ++i)
+			for(int i = 0; i < MAX_AXES; ++i)
 			{
-				i->absOnly = true; //Currently, joysticks only report Absolute values
-				i->clear();
+				mVectors[i].clear();
 			}
 
-			for(std::vector<Vector3>::iterator i = mVectors.begin(), e = mVectors.end(); i != e; ++i)
+			for(int i = 0; i < MAX_POVS; ++i)
 			{
-				i->clear();
+				mPOVs[i].direction = Pov::Centered;
 			}
 
-			for(int i = 0; i < 4; ++i)
+			for(int i = 0; i < MAX_SLIDERS; ++i)
 			{
-				mPOV[i].direction = Pov::Centered;
 				mSliders[i].abX = mSliders[i].abY = 0;
 			}
 		}
@@ -126,10 +134,9 @@ namespace OIS
 
 		const JoyStickState& state;
 
-	private:
 		// Prevent copying.
-		JoyStickEvent(const JoyStickEvent&);
-		JoyStickEvent& operator=(JoyStickEvent);
+		JoyStickEvent(const JoyStickEvent&) = delete;
+		JoyStickEvent& operator=(JoyStickEvent) = delete;
 	};
 
 	/**
@@ -227,19 +234,28 @@ namespace OIS
 		const JoyStickState& getJoyStickState() const { return mState; }
 
 		//! The minimal axis value
-		static const int MIN_AXIS = -32768;
+		static const int MIN_AXIS_VALUE = -32768;
 
 		//! The maximum axis value
-		static const int MAX_AXIS = 32767;
+		static const int MAX_AXIS_VALUE = 32767;
 
 	protected:
 		JoyStick(const std::string& vendor, bool buffered, int devID, InputManager* creator);
 
+		//! Number of Buttons
+		int mButtonCount;
+
+		//! Number of axes
+		int mAxisCount;
+
 		//! Number of sliders
-		int mSliders;
+		int mSliderCount;
 
 		//! Number of POVs
-		int mPOVs;
+		int mPOVCount;
+
+		//! Number of vector
+		int mVectorCount;
 
 		//! The JoyStickState structure (contains all component values)
 		JoyStickState mState;

@@ -40,9 +40,9 @@ namespace OIS
 		virtual ~Interface() {};
 
 		//! Type of Interface
-		enum IType {
-			ForceFeedback,
-			Reserved
+		enum Type {
+			TypeForceFeedback,
+			TypeReserved
 		};
 	};
 }

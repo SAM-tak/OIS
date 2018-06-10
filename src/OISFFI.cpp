@@ -65,9 +65,16 @@ void OIS_InputManager_EnableAddOnFactory(intptr_t inputManager)
 	((InputManager*)inputManager)->enableAddOnFactory(InputManager::AddOn_All);
 }
 
-intptr_t OIS_InputManager_CreateInputObject(intptr_t inputManager, int iType, bool buffered)
+void OIS_InputManager_EnumrateFreeDevice(intptr_t inputManager, OIS_InputManager_EnumrateFreeDeviceCallback cb)
 {
-	return (intptr_t)((InputManager*)inputManager)->createInputObject((Type)iType, buffered);
+	for(auto i : ((InputManager*)inputManager)->listFreeDevices()) {
+		cb(i.first, i.second.c_str());
+	}
+}
+
+intptr_t OIS_InputManager_CreateInputObject(intptr_t inputManager, int iType, const char *vendor)
+{
+	return (intptr_t)((InputManager*)inputManager)->createInputObject((Type)iType, false, vendor);
 }
 
 void OIS_InputManager_DestroyInputObject(intptr_t inputManager, intptr_t inputObject)
@@ -85,16 +92,6 @@ bool OIS_InputObject_GetVenderString(intptr_t inputObject, char* buf, size_t buf
 	return true;
 }
 
-bool OIS_InputObject_Buffered(intptr_t inputObject)
-{
-	return ((Object*)inputObject)->buffered();
-}
-
-void OIS_InputObject_SetBuffered(intptr_t inputObject, bool bufferd)
-{
-	((Object*)inputObject)->setBuffered(bufferd);
-}
-
 intptr_t OIS_InputObject_GetCreator(intptr_t inputObject)
 {
 	return (intptr_t)((Object*)inputObject)->getCreator();
@@ -108,4 +105,89 @@ void OIS_InputObject_Capture(intptr_t inputObject)
 int OIS_InputObject_GetID(intptr_t inputObject)
 {
 	return ((Object*)inputObject)->getID();
+}
+
+bool OIS_Keyboard_IsKeyDown(intptr_t inputObject, int keyCode)
+{
+	return ((Keyboard*)inputObject)->isKeyDown((KeyCode)keyCode);
+}
+
+bool OIS_Keyboard_IsModifierDown(intptr_t inputObject, int modifierKeyCode)
+{
+	return ((Keyboard*)inputObject)->isModifierDown((Keyboard::Modifier)modifierKeyCode);
+}
+
+bool OIS_Mouse_IsButtonDown(intptr_t inputObject, int button)
+{
+	return ((Mouse*)inputObject)->getMouseState().buttonDown((MouseButtonID)button);
+}
+
+int OIS_Mouse_GetPosition(intptr_t inputObject, int axis, int type)
+{
+	switch(axis + type * 3) {
+	case 0:
+		return ((Mouse*)inputObject)->getMouseState().X.abs;
+	case 1:
+		return ((Mouse*)inputObject)->getMouseState().Y.abs;
+	case 2:
+		return ((Mouse*)inputObject)->getMouseState().Z.abs;
+	case 3:
+		return ((Mouse*)inputObject)->getMouseState().X.rel;
+	case 4:
+		return ((Mouse*)inputObject)->getMouseState().Y.rel;
+	case 5:
+		return ((Mouse*)inputObject)->getMouseState().Z.rel;
+	}
+	return 0;
+}
+
+unsigned long OIS_JoyStick_GetButtons(intptr_t inputObject)
+{
+	return ((JoyStick*)inputObject)->getJoyStickState().mButtons.to_ulong();
+}
+
+int OIS_JoyStick_GetNumberOfComponents(intptr_t inputObject, int componentType)
+{
+	return ((JoyStick*)inputObject)->getNumberOfComponents((ComponentType)componentType);
+}
+
+int OIS_JoyStick_GetAxis(intptr_t inputObject, int index, int type)
+{
+	switch(type) {
+	case 0:
+		return ((JoyStick*)inputObject)->getJoyStickState().mAxes[index].abs;
+	case 1:
+		return ((JoyStick*)inputObject)->getJoyStickState().mAxes[index].rel;
+	}
+	return 0;
+}
+
+int OIS_JoyStick_GetPOV(intptr_t inputObject, int index)
+{
+	return ((JoyStick*)inputObject)->getJoyStickState().mPOVs[index].direction;
+}
+
+int OIS_JoyStick_GetSlider(intptr_t inputObject, int index, int axis)
+{
+	switch(axis) {
+	case 0:
+		return ((JoyStick*)inputObject)->getJoyStickState().mSliders[index].abX;
+	case 1:
+		return ((JoyStick*)inputObject)->getJoyStickState().mSliders[index].abY;
+	}
+	return 0;
+}
+
+float OIS_JoyStick_GetVector(intptr_t inputObject, int index, int axis)
+{
+	switch(axis)
+	{
+		case 0:
+			return ((JoyStick*)inputObject)->getJoyStickState().mVectors[index].x;
+		case 1:
+			return ((JoyStick*)inputObject)->getJoyStickState().mVectors[index].y;
+		case 2:
+			return ((JoyStick*)inputObject)->getJoyStickState().mVectors[index].z;
+	}
+	return 0;
 }
