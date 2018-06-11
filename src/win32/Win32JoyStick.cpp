@@ -29,7 +29,15 @@ following restrictions:
 #include "OISEvents.h"
 #include "OISException.h"
 
+#ifdef min
+#undef min
+#endif
+#ifdef max
+#undef max
+#endif
+
 #include <cassert>
+#include <algorithm>
 
 // Only if xinput support is enabled
 #ifdef OIS_WIN32_XINPUT_SUPPORT
