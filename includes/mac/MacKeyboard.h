@@ -62,7 +62,7 @@ namespace OIS
 			return KC_UNASSIGNED;
 		}
 
-		virtual Interface* queryInterface(Interface::IType type) { return 0; }
+		virtual Interface* queryInterface(Interface::Type type) { return 0; }
 
 		// Public but reserved for internal use:
 		virtual void _initialize();

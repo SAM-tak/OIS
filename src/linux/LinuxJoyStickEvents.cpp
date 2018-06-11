@@ -52,12 +52,11 @@ LinuxJoyStick::LinuxJoyStick(InputManager* creator, bool buffered, const JoyStic
 {
 	mJoyStick = js.joyFileD;
 
-	mState.mAxes.clear();
-	mState.mAxes.resize(js.axes);
-	mState.mButtons.clear();
-	mState.mButtons.resize(js.buttons);
+	mState.clear();
 
-	mPOVs = js.hats;
+    mButtonCount = js.buttons;
+    mAxisCount = js.axes;
+	mPOVCount = js.hats;
 
 	mButtonMap = js.button_map;
 	mAxisMap   = js.axis_map;
@@ -76,7 +75,7 @@ LinuxJoyStick::~LinuxJoyStick()
 void LinuxJoyStick::_initialize()
 {
 	//Clear old joy state
-	mState.mAxes.resize(mAxisMap.size());
+    mAxisCount = mAxisMap.size();
 	mState.clear();
 
 	//This will create and new us a force feedback structure if it exists
@@ -143,7 +142,7 @@ void LinuxJoyStick::capture()
 						axisMoved[axis] = true;
 
 						//check for rescaling:
-						if(mRanges[axis].min == JoyStick::MIN_AXIS && mRanges[axis].max != JoyStick::MAX_AXIS)
+						if(mRanges[axis].min == JoyStick::MIN_AXIS_VALUE && mRanges[axis].max != JoyStick::MAX_AXIS_VALUE)
 						{ //Scale is perfect
 							mState.mAxes[axis].abs = js[i].value;
 						}
@@ -167,21 +166,21 @@ void LinuxJoyStick::capture()
 							//it can't possibly be west too. So clear out the two X axes, then refil
 							//it in with the new direction bit.
 							//Clear the East/West Bit Flags first
-							mState.mPOV[OIS_POVIndex].direction &= 0x11110011;
+							mState.mPOVs[OIS_POVIndex].direction &= 0x11110011;
 							if(js[i].value == -1) //Left
-								mState.mPOV[OIS_POVIndex].direction |= Pov::West;
+								mState.mPOVs[OIS_POVIndex].direction |= Pov::West;
 							else if(js[i].value == 1) //Right
-								mState.mPOV[OIS_POVIndex].direction |= Pov::East;
+								mState.mPOVs[OIS_POVIndex].direction |= Pov::East;
 						}
 						//Handle Y Axis (Odd) (up down)
 						else
 						{
 							//Clear the North/South Bit Flags first
-							mState.mPOV[OIS_POVIndex].direction &= 0x11111100;
+							mState.mPOVs[OIS_POVIndex].direction &= 0x11111100;
 							if(js[i].value == -1) //Up
-								mState.mPOV[OIS_POVIndex].direction |= Pov::North;
+								mState.mPOVs[OIS_POVIndex].direction |= Pov::North;
 							else if(js[i].value == 1) //Down
-								mState.mPOV[OIS_POVIndex].direction |= Pov::South;
+								mState.mPOVs[OIS_POVIndex].direction |= Pov::South;
 						}
 
 						if(mBuffered && mListener)
@@ -307,7 +306,7 @@ void LinuxJoyStick::_clearJoys(JoyStickInfoList& joys)
 }
 
 //-------------------------------------------------------------------//
-Interface* LinuxJoyStick::queryInterface(Interface::IType type)
+Interface* LinuxJoyStick::queryInterface(Interface::Type type)
 {
 	if(ff_effect && type == Interface::ForceFeedback)
 		return ff_effect;

@@ -60,19 +60,15 @@ void MacJoyStick::_initialize()
 	assert(mInfo && "Given HidInfo invalid");
 	assert(mInfo->interface && "Joystick interface invalid");
 
-	//TODO: Is this necessary?
-	//Clear old state
-	mState.mAxes.clear();
+    mState.clear();
 
 	if((*mInfo->interface)->open(mInfo->interface, 0) != KERN_SUCCESS)
 		OIS_EXCEPT(E_General, "MacJoyStick::_initialize() >> Could not initialize joy device!");
 
-	mState.clear();
-
 	_enumerateCookies();
 
-	mState.mButtons.resize(mInfo->numButtons);
-	mState.mAxes.resize(mInfo->numAxes);
+    mButtonCount = std::min<int>(JoyStickState::MAX_BUTTONS, mInfo->numButtons);
+    mAxisCount = std::min<int>(JoyStickState::MAX_AXES, mInfo->numAxes);
 
 	mQueue = _createQueue();
 }
@@ -141,7 +137,7 @@ void MacJoyStick::setBuffered(bool buffered)
 }
 
 //--------------------------------------------------------------------------------------------------//
-Interface* MacJoyStick::queryInterface(Interface::IType type)
+Interface* MacJoyStick::queryInterface(Interface::Type type)
 {
 	//Thought about using covariant return type here.. however,
 	//some devices may allow LED light changing, or other interface stuff
