@@ -72,7 +72,7 @@ namespace OIS
 		//! Constructor
 		JoyStickState() { clear(); }
 
-		enum Conts {
+		enum MaxComponentCount {
 			MAX_BUTTONS = 32,
 			MAX_AXES    = 8,
 			MAX_POVS	= 4,
@@ -99,26 +99,17 @@ namespace OIS
 		{
 			mButtons.reset();
 
-			for(int i = 0; i < MAX_AXES; ++i)
+			for(auto i : mAxes)
 			{
-				mAxes[i].absOnly = true; //Currently, joysticks only report Absolute values
-				mAxes[i].clear();
+				i.absOnly = true; //Currently, joysticks only report Absolute values
+				i.clear();
 			}
 
-			for(int i = 0; i < MAX_AXES; ++i)
-			{
-				mVectors[i].clear();
-			}
+			for(auto i : mVectors) i.clear();
 
-			for(int i = 0; i < MAX_POVS; ++i)
-			{
-				mPOVs[i].direction = Pov::Centered;
-			}
+			for(auto i : mPOVs) i.direction = Pov::Centered;
 
-			for(int i = 0; i < MAX_SLIDERS; ++i)
-			{
-				mSliders[i].abX = mSliders[i].abY = 0;
-			}
+			for(auto i : mSliders) i.abX = i.abY = 0;
 		}
 	};
 
