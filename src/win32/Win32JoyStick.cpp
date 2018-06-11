@@ -152,8 +152,8 @@ void Win32JoyStick::_enumerate()
 
 		mPOVCount = (short)mDIJoyCaps.dwPOVs;
 
-		mButtonCount = mDIJoyCaps.dwButtons;
-		mAxisCount = mDIJoyCaps.dwAxes;
+        mButtonCount = std::min<int>(JoyStickState::MAX_BUTTONS, mDIJoyCaps.dwButtons);
+		mAxisCount = std::min<int>(JoyStickState::MAX_AXES, mDIJoyCaps.dwAxes);
 
 		//Reset the axis mapping enumeration value
 		_AxisNumber = 0;

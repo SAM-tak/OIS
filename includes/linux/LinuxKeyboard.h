@@ -57,7 +57,7 @@ namespace OIS
 		virtual void capture();
 
 		/** @copydoc Object::queryInterface */
-		virtual Interface* queryInterface(Interface::IType) { return 0; }
+		virtual Interface* queryInterface(Interface::Type) { return 0; }
 
 		/** @copydoc Object::_initialize */
 		virtual void _initialize();

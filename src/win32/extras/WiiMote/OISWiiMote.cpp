@@ -77,25 +77,21 @@ void WiiMote::_initialize()
 		OIS_EXCEPT(E_InputDisconnected, "Error starting WiiMote data stream!");
 
 	//Fill in joystick information
-	mState.mVectors.clear();
-	mState.mButtons.clear();
-	mState.mAxes.clear();
-
 	if(mWiiMote.IsNunChuckAttached())
 	{ //Setup for WiiMote + nunChuck
-		mState.mVectors.resize(2);
-		mState.mButtons.resize(9);
-		mState.mAxes.resize(2);
+		mVectorCount = 2;
+		mButtonCount = 9;
+		mAxisCount   = 2;
 		mState.mAxes[0].absOnly = true;
 		mState.mAxes[1].absOnly = true;
 	}
 	else
 	{ //Setup for WiiMote
-		mState.mVectors.resize(1);
-		mState.mButtons.resize(7);
+        mVectorCount = 1;
+        mButtonCount = 7;
 	}
 
-	mPOVs = 1;
+	mPOVCount = 1;
 	mState.clear();
 	mtInitialized = true;
 }
@@ -184,17 +180,17 @@ void WiiMote::_threadUpdate()
 		mWiiMote.GetCalibratedChuckStick(tempX, tempY);
 
 		//Convert to int and clip
-		newEvent.nunChuckXAxis = (int)(tempX * JoyStick::MAX_AXIS);
-		if(newEvent.nunChuckXAxis > JoyStick::MAX_AXIS)
-			newEvent.nunChuckXAxis = JoyStick::MAX_AXIS;
-		else if(newEvent.nunChuckXAxis < JoyStick::MIN_AXIS)
-			newEvent.nunChuckXAxis = JoyStick::MIN_AXIS;
+		newEvent.nunChuckXAxis = (int)(tempX * JoyStick::MAX_AXIS_VALUE);
+		if(newEvent.nunChuckXAxis > JoyStick::MAX_AXIS_VALUE)
+			newEvent.nunChuckXAxis = JoyStick::MAX_AXIS_VALUE;
+		else if(newEvent.nunChuckXAxis < JoyStick::MIN_AXIS_VALUE)
+			newEvent.nunChuckXAxis = JoyStick::MIN_AXIS_VALUE;
 
-		newEvent.nunChuckYAxis = (int)(tempY * JoyStick::MAX_AXIS);
-		if(newEvent.nunChuckYAxis > JoyStick::MAX_AXIS)
-			newEvent.nunChuckYAxis = JoyStick::MAX_AXIS;
-		else if(newEvent.nunChuckYAxis < JoyStick::MIN_AXIS)
-			newEvent.nunChuckYAxis = JoyStick::MIN_AXIS;
+		newEvent.nunChuckYAxis = (int)(tempY * JoyStick::MAX_AXIS_VALUE);
+		if(newEvent.nunChuckYAxis > JoyStick::MAX_AXIS_VALUE)
+			newEvent.nunChuckYAxis = JoyStick::MAX_AXIS_VALUE;
+		else if(newEvent.nunChuckYAxis < JoyStick::MIN_AXIS_VALUE)
+			newEvent.nunChuckYAxis = JoyStick::MIN_AXIS_VALUE;
 
 		//Apply a little dead-zone dampner
 		int xDiff = newEvent.nunChuckXAxis - mLastNunChuckXAxis;
@@ -330,14 +326,13 @@ void WiiMote::capture()
 		//Has the hat swtich changed?
 		if(events[i].povChanged)
 		{
-			mState.mPOV[0].direction = events[i].povDirection;
+			mState.mPOVs[0].direction = events[i].povDirection;
 			if(mBuffered && mListener)
 				if(!mListener->povMoved(JoyStickEvent(this, mState), 0)) return;
 		}
 
 		//Check for any pushed/released events for each button bit
-		int buttons = (int)mState.mButtons.size();
-		for(int b = 0; b < buttons; ++b)
+		for(int b = 0; b < mButtonCount; ++b)
 		{
 			unsigned bit_flag = 1 << b;
 			if((events[i].pushedButtons & bit_flag) != 0)
@@ -358,7 +353,7 @@ void WiiMote::capture()
 }
 
 //-----------------------------------------------------------------------------------//
-Interface* WiiMote::queryInterface(Interface::IType type)
+Interface* WiiMote::queryInterface(Interface::Type type)
 {
 	if(type == Interface::ForceFeedback && mtInitialized)
 		return mRumble;

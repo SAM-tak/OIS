@@ -75,7 +75,7 @@ namespace OIS
 		// Returns a description of the given key
 		virtual std::string& getAsString(KeyCode key);
 
-		virtual Interface* queryInterface(Interface::IType type) { return 0; }
+		virtual Interface* queryInterface(Interface::Type type) { return 0; }
 
 		// Public but reserved for internal use:
 		virtual void _initialize();

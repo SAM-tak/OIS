@@ -99,8 +99,8 @@ DeviceComponentInfo getComponentInfo(int deviceID)
 							//input_absinfo absinfo;
 							//ioctl(deviceID, EVIOCGABS(j), &absinfo);
 							//We cannot actually change these values :|
-							//absinfo.minimum = JoyStick::MIN_AXIS;
-							//absinfo.maximum = JoyStick::MAX_AXIS;
+							//absinfo.minimum = JoyStick::MIN_AXIS_VALUE;
+							//absinfo.maximum = JoyStick::MAX_AXIS_VALUE;
 							//ioctl(deviceID, EVIOCSABS(j), &absinfo);
 						}
 					}

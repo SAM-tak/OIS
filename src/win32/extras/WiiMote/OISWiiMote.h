@@ -49,7 +49,7 @@ namespace OIS
 
 		void capture();
 
-		Interface* queryInterface(Interface::IType type);
+		Interface* queryInterface(Interface::Type type);
 
 		void _initialize();
 

@@ -48,7 +48,7 @@ iPhoneAccelerometer::~iPhoneAccelerometer()
 void iPhoneAccelerometer::_initialize()
 {
 	// Clear old joy state
-	mState.mVectors.resize(1);
+	mVectorCount = 1;
 	mState.clear();
 	mTempState.clear();
 

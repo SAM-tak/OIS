@@ -36,7 +36,7 @@ LIRCControl::LIRCControl(InputManager* creator, int id, bool buffered, LIRCFacto
  mInfo(info)
 {
 	//Fill in joystick information
-	mState.mButtons.resize(mInfo.buttons);
+	mButtonCount = mInfo.buttons;
 }
 
 //-----------------------------------------------------------------------------------//
@@ -100,7 +100,7 @@ void LIRCControl::queueButtonPressed(const std::string& id)
 }
 
 //-----------------------------------------------------------------------------------//
-Interface* LIRCControl::queryInterface(Interface::IType type)
+Interface* LIRCControl::queryInterface(Interface::Type type)
 {
 	return 0;
 }

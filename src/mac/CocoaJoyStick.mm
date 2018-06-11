@@ -56,19 +56,15 @@ void CocoaJoyStick::_initialize()
 	assert(mInfo && "Given HidInfo invalid");
 	assert(mInfo->interface && "Joystick interface invalid");
 
-	//TODO: Is this necessary?
-	//Clear old state
-	mState.mAxes.clear();
+	mState.clear();
 
 	if((*mInfo->interface)->open(mInfo->interface, 0) != KERN_SUCCESS)
 		OIS_EXCEPT(E_General, "CocoaJoyStick::_initialize() >> Could not initialize joy device!");
 
-	mState.clear();
-
 	_enumerateCookies();
 
-	mState.mButtons.resize(mInfo->numButtons);
-	mState.mAxes.resize(mInfo->numAxes);
+    mButtonCount = std::min<int>(JoyStickState::MAX_BUTTONS, mInfo->numButtons);
+	mAxisCount = std::min<int>(JoyStickState::MAX_AXES, mInfo->numAxes);
 
 	mQueue = _createQueue();
 }
@@ -127,7 +123,7 @@ void CocoaJoyStick::capture()
 				//Copied from LinuxJoyStickEvents.cpp, line 149
 				const AxisInfo& axisInfo = axisIt->second;
 				float proportion		 = (float)(event.value - axisInfo.max) / (float)(axisInfo.min - axisInfo.max);
-				mState.mAxes[axis].abs   = -JoyStick::MIN_AXIS - (JoyStick::MAX_AXIS * 2 * proportion);
+				mState.mAxes[axis].abs   = -JoyStick::MIN_AXIS_VALUE - (JoyStick::MAX_AXIS_VALUE * 2 * proportion);
 
 				if(mBuffered && mListener) mListener->axisMoved(JoyStickEvent(this, mState), axis);
 				break;
@@ -144,7 +140,7 @@ void CocoaJoyStick::setBuffered(bool buffered)
 }
 
 //--------------------------------------------------------------------------------------------------//
-Interface* CocoaJoyStick::queryInterface(Interface::IType type)
+Interface* CocoaJoyStick::queryInterface(Interface::Type type)
 {
 	//Thought about using covariant return type here.. however,
 	//some devices may allow LED light changing, or other interface stuff
