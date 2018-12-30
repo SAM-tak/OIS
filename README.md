@@ -22,9 +22,16 @@ To build and install:
     make
     make install
 ```
+
+By default, the `install` target will install OIS.pc inside `/usr/local/lib/pkgconfig`. To find OIS with pkg-config, you need to have this directory on your `PKG_CONFIG_PATH` 
+
+```bash
+    export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+```
+
 ### Windows
 
-Dependencies: DirectInput 8
+Dependencies: DirectX SDK (now part of the Windows SDK)
 
 For Visual Studio:
 
@@ -33,11 +40,13 @@ For Visual Studio:
     msbuild "build\OIS.sln"
 ```
 
-Or, simply open CMake-gui, and generate a visual studio solution in a few clicks.
+Or, simply open `cmake-gui`, and generate a visual studio solution in a few clicks.
 
 ### OSX
 
-For XCode:
+For XCode: 
+
+(or use the graphical CMake tool)
 
 ```bash
     cmake -H. -B./build
@@ -45,6 +54,9 @@ For XCode:
     make
 
 ```
+
+On a 64bit mac, code will use Cocoa to interact with the input system. 
+
 ## License
 
 ```

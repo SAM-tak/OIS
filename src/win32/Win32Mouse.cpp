@@ -1,24 +1,27 @@
 /*
 The zlib/libpng License
 
-Copyright (c) 2005-2007 Phillip Castaneda (pjcast -- www.wreckedgames.com)
+Copyright (c) 2018 Arthur Brainville
+Copyright (c) 2015 Andrew Fenn
+Copyright (c) 2005-2010 Phillip Castaneda (pjcast -- www.wreckedgames.com)
 
-This software is provided 'as-is', without any express or implied warranty. In no event will
-the authors be held liable for any damages arising from the use of this software.
+This software is provided 'as-is', without any express or implied warranty. In no
+event will the authors be held liable for any damages arising from the use of this
+software.
 
-Permission is granted to anyone to use this software for any purpose, including commercial
-applications, and to alter it and redistribute it freely, subject to the following
-restrictions:
+Permission is granted to anyone to use this software for any purpose, including
+commercial applications, and to alter it and redistribute it freely, subject to the
+following restrictions:
 
-	1. The origin of this software must not be misrepresented; you must not claim that
-		you wrote the original software. If you use this software in a product,
-		an acknowledgment in the product documentation would be appreciated but is
-		not required.
+    1. The origin of this software must not be misrepresented; you must not claim that
+        you wrote the original software. If you use this software in a product,
+        an acknowledgment in the product documentation would be appreciated
+        but is not required.
 
-	2. Altered source versions must be plainly marked as such, and must not be
-		misrepresented as being the original software.
+    2. Altered source versions must be plainly marked as such, and must not be
+        misrepresented as being the original software.
 
-	3. This notice may not be removed or altered from any source distribution.
+    3. This notice may not be removed or altered from any source distribution.   
 */
 #include "win32/Win32Mouse.h"
 #include "win32/Win32InputManager.h"
@@ -31,10 +34,10 @@ using namespace OIS;
 Win32Mouse::Win32Mouse(InputManager* creator, IDirectInput8* pDI, bool buffered, DWORD coopSettings) :
  Mouse(creator->inputSystemName(), buffered, 0, creator)
 {
-	mMouse		 = 0;
+	mMouse		 = nullptr;
 	mDirectInput = pDI;
 	coopSetting  = coopSettings;
-	mHwnd		 = 0;
+	mHwnd		 = nullptr;
 
 	static_cast<Win32InputManager*>(mCreator)->_setMouseUsed(true);
 }
@@ -59,7 +62,7 @@ void Win32Mouse::_initialize()
 	if(FAILED(mMouse->SetDataFormat(&c_dfDIMouse2)))
 		OIS_EXCEPT(E_General, "Win32Mouse::Win32Mouse >> Failed to set format");
 
-	mHwnd = ((Win32InputManager*)mCreator)->getWindowHandle();
+	mHwnd = static_cast<Win32InputManager*>(mCreator)->getWindowHandle();
 
 	if(FAILED(mMouse->SetCooperativeLevel(mHwnd, coopSetting)))
 		OIS_EXCEPT(E_General, "Win32Mouse::Win32Mouse >> Failed to set coop level");
@@ -67,7 +70,7 @@ void Win32Mouse::_initialize()
 	if(FAILED(mMouse->SetProperty(DIPROP_BUFFERSIZE, &dipdw.diph)))
 		OIS_EXCEPT(E_General, "Win32Mouse::Win32Mouse >> Failed to set property");
 
-	HRESULT hr = mMouse->Acquire();
+	const HRESULT hr = mMouse->Acquire();
 	if(FAILED(hr) && hr != DIERR_OTHERAPPHASPRIO)
 		OIS_EXCEPT(E_General, "Win32Mouse::Win32Mouse >> Failed to aquire mouse!");
 
@@ -81,7 +84,7 @@ Win32Mouse::~Win32Mouse()
 	{
 		mMouse->Unacquire();
 		mMouse->Release();
-		mMouse = 0;
+		mMouse = nullptr;
 	}
 
 	static_cast<Win32InputManager*>(mCreator)->_setMouseUsed(false);
@@ -156,17 +159,17 @@ void Win32Mouse::capture()
 //--------------------------------------------------------------------------------------------------//
 bool Win32Mouse::_doMouseClick(int mouseButton, unsigned char di)
 {
-	if(di & 0x80 && !mState.buttonDown((MouseButtonID)mouseButton))
+	if(di & 0x80 && !mState.buttonDown(MouseButtonID(mouseButton)))
 	{
 		mState.buttons |= 1 << mouseButton; //turn the bit flag on
 		if(mListener && mBuffered)
-			return mListener->mousePressed(MouseEvent(this, mState), (MouseButtonID)mouseButton);
+			return mListener->mousePressed(MouseEvent(this, mState), MouseButtonID(mouseButton));
 	}
-	else if(!(di & 0x80) && mState.buttonDown((MouseButtonID)mouseButton))
+	else if(!(di & 0x80) && mState.buttonDown(MouseButtonID(mouseButton)))
 	{
 		mState.buttons &= ~(1 << mouseButton); //turn the bit flag off
 		if(mListener && mBuffered)
-			return mListener->mouseReleased(MouseEvent(this, mState), (MouseButtonID)mouseButton);
+			return mListener->mouseReleased(MouseEvent(this, mState), MouseButtonID(mouseButton));
 	}
 
 	return true;

@@ -1,22 +1,25 @@
 /*
 The zlib/libpng License
 
-Copyright (c) 2005-2007 Phillip Castaneda (pjcast -- www.wreckedgames.com)
+Copyright (c) 2018 Arthur Brainville
+Copyright (c) 2015 Andrew Fenn
+Copyright (c) 2005-2010 Phillip Castaneda (pjcast -- www.wreckedgames.com)
 
-This software is provided 'as-is', without any express or implied warranty. In no event will
-the authors be held liable for any damages arising from the use of this software.
+This software is provided 'as-is', without any express or implied warranty. In no
+event will the authors be held liable for any damages arising from the use of this
+software.
 
-Permission is granted to anyone to use this software for any purpose, including commercial
-applications, and to alter it and redistribute it freely, subject to the following
-restrictions:
+Permission is granted to anyone to use this software for any purpose, including
+commercial applications, and to alter it and redistribute it freely, subject to the
+following restrictions:
 
     1. The origin of this software must not be misrepresented; you must not claim that
-		you wrote the original software. If you use this software in a product,
-		an acknowledgment in the product documentation would be appreciated but is
-		not required.
+        you wrote the original software. If you use this software in a product,
+        an acknowledgment in the product documentation would be appreciated
+        but is not required.
 
     2. Altered source versions must be plainly marked as such, and must not be
-		misrepresented as being the original software.
+        misrepresented as being the original software.
 
     3. This notice may not be removed or altered from any source distribution.
 */
@@ -37,7 +40,7 @@ using namespace OIS;
 
 //--------------------------------------------------------------//
 Win32ForceFeedback::Win32ForceFeedback(IDirectInputDevice8* pDIJoy, const DIDEVCAPS* pDIJoyCaps) :
- mHandles(0), mJoyStick(pDIJoy), mFFAxes(0), mpDIJoyCaps(pDIJoyCaps)
+ mHandles(0), mJoyStick(pDIJoy), mpDIJoyCaps(pDIJoyCaps), mFFAxes(0)
 {
 #if(OIS_WIN32_JOYFF_DEBUG > 0)
 	cout << "FFSamplePeriod      : " << mpDIJoyCaps->dwFFSamplePeriod << " mu-s, "
@@ -82,13 +85,13 @@ unsigned short Win32ForceFeedback::getFFMemoryLoad()
 	const HRESULT hr = mJoyStick->GetProperty(DIPROP_FFLOAD, &dipdw.diph);
 	if(FAILED(hr))
 	{
-		if(hr == DIERR_NOTEXCLUSIVEACQUIRED)
+		if(hr == HRESULT(DIERR_NOTEXCLUSIVEACQUIRED))
 			OIS_EXCEPT(E_General, "Can't query FF memory load as device was not acquired in exclusive mode");
 		else
 			OIS_EXCEPT(E_General, "Unknown error querying FF memory load ->..");
 	}
 
-	return (unsigned short)dipdw.dwData;
+	return static_cast<unsigned short>(dipdw.dwData);
 }
 
 //--------------------------------------------------------------//
@@ -103,7 +106,7 @@ void Win32ForceFeedback::upload(const Effect* effect)
 			_updateConditionalEffect(effect);
 			break;
 		//case OIS::Effect::CustomForce: _updateCustomEffect(effect); break;
-		default: OIS_EXCEPT(E_NotImplemented, "Requested Force not Implemented yet, sorry!"); break;
+		default: OIS_EXCEPT(E_NotImplemented, "Requested Force not Implemented yet, sorry!");
 	}
 }
 
@@ -283,7 +286,7 @@ void Win32ForceFeedback::_updateConditionalEffect(const Effect* effect)
 	cf.dwNegativeSaturation = eff->leftSaturation;
 	cf.lDeadBand			= eff->deadband;
 
-	_setCommonProperties(&diEffect, rgdwAxes, rglDirection, &diEnvelope, sizeof(DICONDITION), &cf, effect, 0);
+	_setCommonProperties(&diEffect, rgdwAxes, rglDirection, &diEnvelope, sizeof(DICONDITION), &cf, effect, nullptr);
 
 	switch(effect->type)
 	{
@@ -357,7 +360,7 @@ void Win32ForceFeedback::_setCommonProperties(
 		diEffect->lpEnvelope	  = diEnvelope;
 	}
 	else
-		diEffect->lpEnvelope = 0;
+		diEffect->lpEnvelope = nullptr;
 
 #if(OIS_WIN32_JOYFF_DEBUG > 1)
 	if(diEnvelope && envelope && envelope->isUsed())
@@ -393,7 +396,7 @@ void Win32ForceFeedback::_setCommonProperties(
 //--------------------------------------------------------------//
 void Win32ForceFeedback::_upload(GUID guid, DIEFFECT* diEffect, const Effect* effect)
 {
-	LPDIRECTINPUTEFFECT dxEffect = 0;
+	LPDIRECTINPUTEFFECT dxEffect = nullptr;
 
 	//Get the effect - if it exists
 	EffectList::iterator i = mEffectList.find(effect->_handle);
@@ -403,16 +406,16 @@ void Win32ForceFeedback::_upload(GUID guid, DIEFFECT* diEffect, const Effect* ef
 	else //This effect has not yet been created - generate a handle
 		effect->_handle = mHandles++;
 
-	if(dxEffect == 0)
+	if(dxEffect == nullptr)
 	{
 		//This effect has not yet been created, so create it
-		HRESULT hr = mJoyStick->CreateEffect(guid, diEffect, &dxEffect, NULL);
+		HRESULT hr = mJoyStick->CreateEffect(guid, diEffect, &dxEffect, nullptr);
 		if(SUCCEEDED(hr))
 		{
 			mEffectList[effect->_handle] = dxEffect;
 			dxEffect->Start(INFINITE, 0);
 		}
-		else if(hr == DIERR_DEVICEFULL)
+		else if(hr == HRESULT(DIERR_DEVICEFULL))
 			OIS_EXCEPT(E_DeviceFull, "Remove an effect before adding more!");
 		else
 			OIS_EXCEPT(E_General, "Unknown error creating effect->..");
@@ -420,7 +423,7 @@ void Win32ForceFeedback::_upload(GUID guid, DIEFFECT* diEffect, const Effect* ef
 	else
 	{
 		//ToDo -- Update the Effect
-		HRESULT hr = dxEffect->SetParameters(diEffect, DIEP_DIRECTION | DIEP_DURATION | DIEP_ENVELOPE | DIEP_STARTDELAY | DIEP_TRIGGERBUTTON | DIEP_TRIGGERREPEATINTERVAL | DIEP_TYPESPECIFICPARAMS | DIEP_START);
+		const HRESULT hr = dxEffect->SetParameters(diEffect, DIEP_DIRECTION | DIEP_DURATION | DIEP_ENVELOPE | DIEP_STARTDELAY | DIEP_TRIGGERBUTTON | DIEP_TRIGGERREPEATINTERVAL | DIEP_TYPESPECIFICPARAMS | DIEP_START);
 
 		if(FAILED(hr)) OIS_EXCEPT(E_InvalidParam, "Error updating device!");
 	}

@@ -1,22 +1,25 @@
 /*
 The zlib/libpng License
 
-Copyright (c) 2005-2007 Phillip Castaneda (pjcast -- www.wreckedgames.com)
+Copyright (c) 2018 Arthur Brainville
+Copyright (c) 2015 Andrew Fenn
+Copyright (c) 2005-2010 Phillip Castaneda (pjcast -- www.wreckedgames.com)
 
-This software is provided 'as-is', without any express or implied warranty. In no event will
-the authors be held liable for any damages arising from the use of this software.
+This software is provided 'as-is', without any express or implied warranty. In no
+event will the authors be held liable for any damages arising from the use of this
+software.
 
-Permission is granted to anyone to use this software for any purpose, including commercial
-applications, and to alter it and redistribute it freely, subject to the following
-restrictions:
+Permission is granted to anyone to use this software for any purpose, including
+commercial applications, and to alter it and redistribute it freely, subject to the
+following restrictions:
 
     1. The origin of this software must not be misrepresented; you must not claim that
-		you wrote the original software. If you use this software in a product,
-		an acknowledgment in the product documentation would be appreciated but is
-		not required.
+        you wrote the original software. If you use this software in a product,
+        an acknowledgment in the product documentation would be appreciated
+        but is not required.
 
     2. Altered source versions must be plainly marked as such, and must not be
-		misrepresented as being the original software.
+        misrepresented as being the original software.
 
     3. This notice may not be removed or altered from any source distribution.
 */
@@ -57,8 +60,8 @@ using namespace OIS;
 InputManager::InputManager(const std::string& name) :
  m_VersionName(OIS_VERSION_NAME),
  mInputSystemName(name),
- m_lircSupport(0),
- m_wiiMoteSupport(0)
+ m_lircSupport(nullptr),
+ m_wiiMoteSupport(nullptr)
 {
 	mFactories.clear();
 	mFactoryObjects.clear();
@@ -92,9 +95,7 @@ const std::string& InputManager::getVersionName()
 InputManager* InputManager::createInputSystem(std::size_t windowhandle)
 {
 	ParamList pl;
-	std::ostringstream wnd;
-	wnd << windowhandle;
-	pl.insert(std::make_pair(std::string("WINDOW"), wnd.str()));
+	pl.insert(std::make_pair(std::string("WINDOW"), std::to_string(windowhandle)));
 
 	return createInputSystem(pl);
 }
@@ -102,7 +103,7 @@ InputManager* InputManager::createInputSystem(std::size_t windowhandle)
 //----------------------------------------------------------------------------//
 InputManager* InputManager::createInputSystem(ParamList& paramList)
 {
-	InputManager* im = 0;
+	InputManager* im = nullptr;
 
 #if defined OIS_SDL_PLATFORM
 	im = new SDLInputManager();
@@ -146,13 +147,15 @@ InputManager* InputManager::createInputSystem(ParamList& paramList)
 //----------------------------------------------------------------------------//
 void InputManager::destroyInputSystem(InputManager* manager)
 {
-	if(manager == 0)
+	if(manager == nullptr)
 		return;
 
 	//Cleanup before deleting...
-	for(auto i : manager->mFactoryObjects)
+	for(FactoryCreatedObject::iterator i = manager->mFactoryObjects.begin();
+		i != manager->mFactoryObjects.end();
+		++i)
 	{
-		i.second->destroyObject(i.first);
+		i->second->destroyObject(i->first);
 	}
 
 	manager->mFactoryObjects.clear();
@@ -170,8 +173,9 @@ int InputManager::getNumberOfDevices(Type iType)
 {
 	//Count up all the factories devices
 	int factoyObjects		= 0;
-	for(auto i : mFactories)
-		factoyObjects += i->totalDevices(iType);
+	FactoryList::iterator i = mFactories.begin(), e = mFactories.end();
+	for(; i != e; ++i)
+		factoyObjects += (*i)->totalDevices(iType);
 
 	return factoyObjects;
 }
@@ -180,9 +184,10 @@ int InputManager::getNumberOfDevices(Type iType)
 DeviceList InputManager::listFreeDevices()
 {
 	DeviceList list;
-	for(auto i : mFactories)
+	FactoryList::iterator i = mFactories.begin(), e = mFactories.end();
+	for(; i != e; ++i)
 	{
-		DeviceList temp = i->freeDeviceList();
+		DeviceList temp = (*i)->freeDeviceList();
 		list.insert(temp.begin(), temp.end());
 	}
 
@@ -192,15 +197,16 @@ DeviceList InputManager::listFreeDevices()
 //----------------------------------------------------------------------------//
 Object* InputManager::createInputObject(Type iType, bool bufferMode, const std::string& vendor)
 {
-	Object* obj				= 0;
-	for(auto i : mFactories)
+	Object* obj				= nullptr;
+	FactoryList::iterator i = mFactories.begin(), e = mFactories.end();
+	for(; i != e; ++i)
 	{
-		if(i->freeDevices(iType) > 0)
+		if((*i)->freeDevices(iType) > 0)
 		{
-			if(vendor.empty() || i->vendorExist(iType, vendor))
+			if(vendor.empty() || (*i)->vendorExist(iType, vendor))
 			{
-				obj					 = i->createObject(this, iType, bufferMode, vendor);
-				mFactoryObjects[obj] = i;
+				obj					 = (*i)->createObject(this, iType, bufferMode, vendor);
+				mFactoryObjects[obj] = (*i);
 				break;
 			}
 		}
@@ -225,10 +231,10 @@ Object* InputManager::createInputObject(Type iType, bool bufferMode, const std::
 //----------------------------------------------------------------------------//
 void InputManager::destroyInputObject(Object* obj)
 {
-	if(obj == 0)
+	if(obj == nullptr)
 		return;
 
-	auto i = mFactoryObjects.find(obj);
+	FactoryCreatedObject::iterator i = mFactoryObjects.find(obj);
 	if(i != mFactoryObjects.end())
 	{
 		i->second->destroyObject(obj);
@@ -243,17 +249,17 @@ void InputManager::destroyInputObject(Object* obj)
 //----------------------------------------------------------------------------//
 void InputManager::addFactoryCreator(FactoryCreator* factory)
 {
-	if(factory != 0)
+	if(factory != nullptr)
 		mFactories.push_back(factory);
 }
 
 //----------------------------------------------------------------------------//
 void InputManager::removeFactoryCreator(FactoryCreator* factory)
 {
-	if(factory != 0)
+	if(factory != nullptr)
 	{
 		//First, destroy all devices created with the factory
-		for(auto i = mFactoryObjects.begin(); i != mFactoryObjects.end(); ++i)
+		for(FactoryCreatedObject::iterator i = mFactoryObjects.begin(); i != mFactoryObjects.end(); ++i)
 		{
 			if(i->second == factory)
 			{
@@ -263,7 +269,7 @@ void InputManager::removeFactoryCreator(FactoryCreator* factory)
 		}
 
 		//Now, remove the factory itself
-		auto fact = std::find(mFactories.begin(), mFactories.end(), factory);
+		FactoryList::iterator fact = std::find(mFactories.begin(), mFactories.end(), factory);
 		if(fact != mFactories.end())
 			mFactories.erase(fact);
 	}

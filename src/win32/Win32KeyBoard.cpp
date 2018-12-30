@@ -1,24 +1,27 @@
 /*
 The zlib/libpng License
 
-Copyright (c) 2005-2007 Phillip Castaneda (pjcast -- www.wreckedgames.com)
+Copyright (c) 2018 Arthur Brainville
+Copyright (c) 2015 Andrew Fenn
+Copyright (c) 2005-2010 Phillip Castaneda (pjcast -- www.wreckedgames.com)
 
-This software is provided 'as-is', without any express or implied warranty. In no event will
-the authors be held liable for any damages arising from the use of this software.
+This software is provided 'as-is', without any express or implied warranty. In no
+event will the authors be held liable for any damages arising from the use of this
+software.
 
-Permission is granted to anyone to use this software for any purpose, including commercial
-applications, and to alter it and redistribute it freely, subject to the following
-restrictions:
+Permission is granted to anyone to use this software for any purpose, including
+commercial applications, and to alter it and redistribute it freely, subject to the
+following restrictions:
 
     1. The origin of this software must not be misrepresented; you must not claim that
-		you wrote the original software. If you use this software in a product,
-		an acknowledgment in the product documentation would be appreciated but is
-		not required.
+        you wrote the original software. If you use this software in a product,
+        an acknowledgment in the product documentation would be appreciated
+        but is not required.
 
     2. Altered source versions must be plainly marked as such, and must not be
-		misrepresented as being the original software.
+        misrepresented as being the original software.
 
-    3. This notice may not be removed or altered from any source distribution.
+    3. This notice may not be removed or altered from any source distribution.   
 */
 #include "win32/Win32InputManager.h"
 #include "win32/Win32KeyBoard.h"
@@ -32,7 +35,7 @@ using namespace OIS;
 Win32Keyboard::Win32Keyboard(InputManager* creator, IDirectInput8* pDI, bool buffered, DWORD coopSettings) :
  Keyboard(creator->inputSystemName(), buffered, 0, creator)
 {
-	mKeyboard	= 0;
+	mKeyboard	= nullptr;
 	mDirectInput = pDI;
 	coopSetting  = coopSettings;
 
@@ -54,7 +57,7 @@ void Win32Keyboard::_initialize()
 	if(FAILED(mKeyboard->SetDataFormat(&c_dfDIKeyboard)))
 		OIS_EXCEPT(E_General, "Win32Keyboard::Win32Keyboard >> format error!");
 
-	HWND hwin = ((Win32InputManager*)mCreator)->getWindowHandle();
+	const HWND hwin = static_cast<Win32InputManager*>(mCreator)->getWindowHandle();
 
 	if(FAILED(mKeyboard->SetCooperativeLevel(hwin, coopSetting)))
 		OIS_EXCEPT(E_General, "Win32Keyboard::Win32Keyboard >> coop error!");
@@ -84,7 +87,7 @@ Win32Keyboard::~Win32Keyboard()
 	{
 		mKeyboard->Unacquire();
 		mKeyboard->Release();
-		mKeyboard = 0;
+		mKeyboard = nullptr;
 	}
 	static_cast<Win32InputManager*>(mCreator)->_setKeyboardUsed(false);
 }
@@ -144,6 +147,23 @@ void Win32Keyboard::_readBuffered()
 			else if(kc == KC_LMENU || kc == KC_RMENU)
 				mModifiers |= Alt;
 
+			//These ones are toggled when
+			else if (kc == KC_NUMLOCK)
+			{
+				if (mModifiers & NumLock)
+					mModifiers &= ~NumLock;
+				else
+					mModifiers |= NumLock;
+			}
+
+			else if (kc == KC_CAPITAL)
+			{
+				if (mModifiers & CapsLock)
+					mModifiers &= ~CapsLock;
+				else
+					mModifiers |= CapsLock;
+			}
+
 			if(mListener)
 				ret = mListener->keyPressed(KeyEvent(this, kc, _translateText(kc)));
 		}
@@ -162,7 +182,7 @@ void Win32Keyboard::_readBuffered()
 				ret = mListener->keyReleased(KeyEvent(this, kc, 0));
 		}
 
-		if(ret == false)
+		if(!ret)
 			break;
 	}
 
@@ -192,7 +212,7 @@ void Win32Keyboard::_readBuffered()
 			}
 
 			//If user returned false from callback, return immediately
-			if(ret == false)
+			if(!ret)
 				return;
 		}
 
@@ -306,12 +326,12 @@ const std::string& Win32Keyboard::getAsString(KeyCode kc)
 	if(SUCCEEDED(mKeyboard->GetProperty(DIPROP_KEYNAME, &prop.diph)))
 	{
 		// convert the WCHAR in "wsz" to multibyte
-		if(WideCharToMultiByte(CP_ACP, 0, prop.wsz, -1, temp, sizeof(temp), NULL, NULL))
+		if(WideCharToMultiByte(CP_ACP, 0, prop.wsz, -1, temp, sizeof(temp), nullptr, nullptr))
 			return mGetString.assign(temp);
 	}
 
 	std::stringstream ss;
-	ss << "Key_" << (int)kc;
+	ss << "Key_" << int(kc);
 	return mGetString.assign(ss.str());
 }
 
@@ -331,7 +351,7 @@ void Win32Keyboard::setBuffered(bool buffered)
 		{
 			mKeyboard->Unacquire();
 			mKeyboard->Release();
-			mKeyboard = 0;
+			mKeyboard = nullptr;
 		}
 
 		mBuffered = buffered;

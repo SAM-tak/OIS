@@ -1,24 +1,27 @@
 /*
- The zlib/libpng License
+The zlib/libpng License
 
- Copyright (c) 2005-2007 Phillip Castaneda (pjcast -- www.wreckedgames.com)
+Copyright (c) 2018 Arthur Brainville
+Copyright (c) 2015 Andrew Fenn
+Copyright (c) 2005-2010 Phillip Castaneda (pjcast -- www.wreckedgames.com)
 
- This software is provided 'as-is', without any express or implied warranty. In no event will
- the authors be held liable for any damages arising from the use of this software.
+This software is provided 'as-is', without any express or implied warranty. In no
+event will the authors be held liable for any damages arising from the use of this
+software.
 
- Permission is granted to anyone to use this software for any purpose, including commercial
- applications, and to alter it and redistribute it freely, subject to the following
- restrictions:
+Permission is granted to anyone to use this software for any purpose, including
+commercial applications, and to alter it and redistribute it freely, subject to the
+following restrictions:
 
- 1. The origin of this software must not be misrepresented; you must not claim that
- you wrote the original software. If you use this software in a product,
- an acknowledgment in the product documentation would be appreciated but is
- not required.
+    1. The origin of this software must not be misrepresented; you must not claim that
+        you wrote the original software. If you use this software in a product,
+        an acknowledgment in the product documentation would be appreciated
+        but is not required.
 
- 2. Altered source versions must be plainly marked as such, and must not be
- misrepresented as being the original software.
+    2. Altered source versions must be plainly marked as such, and must not be
+        misrepresented as being the original software.
 
- 3. This notice may not be removed or altered from any source distribution.
+    3. This notice may not be removed or altered from any source distribution. 
  */
 
 #include "mac/CocoaKeyboard.h"
@@ -387,35 +390,51 @@ void CocoaKeyboard::copyKeyStates(char keys[256]) const
 	//cout << "ModMask: " << hex << mods << endl;
 	//cout << "Change:  " << hex << (change & prevModMask) << endl << endl;
 
-	// TODO test modifiers on a full keyboard to check if different mask for left/right
 	switch(change)
 	{
-		case(NSEventModifierFlagShift): // shift
+        case(NSEventModifierFlagShift): // shift
 			oisKeyboardObj->_getModifiers() &= (newstate == MAC_KEYDOWN) ? OIS::Keyboard::Shift : ~OIS::Keyboard::Shift;
 			[self injectEvent:KC_LSHIFT eventTime:time eventType:newstate];
 			break;
 
-		case(NSEventModifierFlagOption): // option (alt)
+        case(NSEventModifierFlagOption): // option (alt)
 			oisKeyboardObj->_getModifiers() &= (newstate == MAC_KEYDOWN) ? OIS::Keyboard::Alt : -OIS::Keyboard::Alt;
 			[self injectEvent:KC_LMENU eventTime:time eventType:newstate];
 			break;
 
-		case(NSEventModifierFlagControl): // Ctrl
-			oisKeyboardObj->_getModifiers() += (newstate == MAC_KEYDOWN) ? OIS::Keyboard::Ctrl : -OIS::Keyboard::Ctrl;
+        case(NSEventModifierFlagControl): // Ctrl
+			oisKeyboardObj->_getModifiers() &= (newstate == MAC_KEYDOWN) ? OIS::Keyboard::Ctrl : -OIS::Keyboard::Ctrl;
 			[self injectEvent:KC_LCONTROL eventTime:time eventType:newstate];
 			break;
 
-		case(NSEventModifierFlagCommand): // apple
+        case(NSEventModifierFlagCommand): // apple
 			[self injectEvent:KC_LWIN eventTime:time eventType:newstate];
 			break;
 
-		case(NSEventModifierFlagFunction): // fn key
+        case(NSEventModifierFlagFunction): // fn key
 			[self injectEvent:KC_APPS eventTime:time eventType:newstate];
 			break;
 
-		case(NSEventModifierFlagCapsLock): // caps lock
+        case(NSEventModifierFlagCapsLock): // caps lock
+            if(newstate == MAC_KEYDOWN)
+            {
+                if (oisKeyboardObj->_getModifiers()  & OIS::Keyboard::CapsLock)
+                    oisKeyboardObj->_getModifiers()  &= ~OIS::Keyboard::CapsLock;
+                else
+                    oisKeyboardObj->_getModifiers()  |= OIS::Keyboard::CapsLock;
+            }
 			[self injectEvent:KC_CAPITAL eventTime:time eventType:newstate];
 			break;
+        case(NSEventModifierFlagNumericPad): // num lock (rare on apple keyboards? I have no clue.)
+            if(newstate == MAC_KEYDOWN)
+            {
+                if (oisKeyboardObj->_getModifiers()  & OIS::Keyboard::NumLock)
+                    oisKeyboardObj->_getModifiers()  &= ~OIS::Keyboard::NumLock;
+                else
+                    oisKeyboardObj->_getModifiers()  |= OIS::Keyboard::NumLock;
+            }
+            [self injectEvent:KC_NUMLOCK eventTime:time eventType:newstate];
+            break;
 	}
 
 	if([theEvent keyCode] == NSClearLineFunctionKey) // numlock

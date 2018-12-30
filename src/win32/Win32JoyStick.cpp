@@ -1,24 +1,27 @@
 /*
 The zlib/libpng License
 
-Copyright (c) 2005-2007 Phillip Castaneda (pjcast -- www.wreckedgames.com)
+Copyright (c) 2018 Arthur Brainville
+Copyright (c) 2015 Andrew Fenn
+Copyright (c) 2005-2010 Phillip Castaneda (pjcast -- www.wreckedgames.com)
 
-This software is provided 'as-is', without any express or implied warranty. In no event will
-the authors be held liable for any damages arising from the use of this software.
+This software is provided 'as-is', without any express or implied warranty. In no
+event will the authors be held liable for any damages arising from the use of this
+software.
 
-Permission is granted to anyone to use this software for any purpose, including commercial
-applications, and to alter it and redistribute it freely, subject to the following
-restrictions:
+Permission is granted to anyone to use this software for any purpose, including
+commercial applications, and to alter it and redistribute it freely, subject to the
+following restrictions:
 
     1. The origin of this software must not be misrepresented; you must not claim that
-		you wrote the original software. If you use this software in a product,
-		an acknowledgment in the product documentation would be appreciated but is
-		not required.
+        you wrote the original software. If you use this software in a product,
+        an acknowledgment in the product documentation would be appreciated
+        but is not required.
 
     2. Altered source versions must be plainly marked as such, and must not be
-		misrepresented as being the original software.
+        misrepresented as being the original software.
 
-    3. This notice may not be removed or altered from any source distribution.
+    3. This notice may not be removed or altered from any source distribution.   
 */
 #include "win32/Win32JoyStick.h"
 #include "win32/Win32InputManager.h"
@@ -26,15 +29,7 @@ restrictions:
 #include "OISEvents.h"
 #include "OISException.h"
 
-#ifdef min
-#undef min
-#endif
-#ifdef max
-#undef max
-#endif
-
 #include <cassert>
-#include <algorithm>
 
 // Only if xinput support is enabled
 #ifdef OIS_WIN32_XINPUT_SUPPORT
@@ -71,12 +66,14 @@ using namespace OIS;
 
 //--------------------------------------------------------------------------------------------------//
 Win32JoyStick::Win32JoyStick(InputManager* creator, IDirectInput8* pDI, bool buffered, DWORD coopSettings, const JoyStickInfo& info) :
- JoyStick(info.vendor, buffered, info.devId, creator),
- mDirectInput(pDI),
- coopSetting(coopSettings),
- mJoyStick(0),
- mJoyInfo(info),
- mFfDevice(0)
+	JoyStick(info.vendor, buffered, info.devId, creator),
+	mDirectInput(pDI),
+	mJoyStick(nullptr),
+	mDIJoyCaps(),
+	coopSetting(coopSettings),
+	mJoyInfo(info),
+	mFfDevice(nullptr),
+	_AxisNumber(0)
 {
 }
 
@@ -89,7 +86,7 @@ Win32JoyStick::~Win32JoyStick()
 	{
 		mJoyStick->Unacquire();
 		mJoyStick->Release();
-		mJoyStick = 0;
+		mJoyStick = nullptr;
 	}
 
 	//Return joystick to pool
@@ -106,10 +103,10 @@ void Win32JoyStick::_initialize()
 	else
 	{
 		//Clear old state
-		mState.clear();
+		mState.mAxes.clear();
 
 		delete mFfDevice;
-		mFfDevice = 0;
+		mFfDevice = nullptr;
 
 		DIPROPDWORD dipdw;
 
@@ -125,7 +122,7 @@ void Win32JoyStick::_initialize()
 		if(FAILED(mJoyStick->SetDataFormat(&c_dfDIJoystick2)))
 			OIS_EXCEPT(E_General, "Win32JoyStick::_initialize() >> data format error!");
 
-		HWND hwin = ((Win32InputManager*)mCreator)->getWindowHandle();
+		HWND hwin = static_cast<Win32InputManager*>(mCreator)->getWindowHandle();
 
 		if(FAILED(mJoyStick->SetCooperativeLevel(hwin, coopSetting)))
 			OIS_EXCEPT(E_General, "Win32JoyStick::_initialize() >> failed to set cooperation level!");
@@ -147,9 +144,10 @@ void Win32JoyStick::_enumerate()
 {
 	if(mJoyInfo.isXInput)
 	{
-		mPOVCount = 1;
-		mButtonCount = XINPUT_TRANSLATED_BUTTON_COUNT;
-		mAxisCount = XINPUT_TRANSLATED_AXIS_COUNT;
+		mPOVs = 1;
+
+		mState.mButtons.resize(XINPUT_TRANSLATED_BUTTON_COUNT);
+		mState.mAxes.resize(XINPUT_TRANSLATED_AXIS_COUNT);
 	}
 	else
 	{
@@ -158,10 +156,10 @@ void Win32JoyStick::_enumerate()
 		if(FAILED(mJoyStick->GetCapabilities(&mDIJoyCaps)))
 			OIS_EXCEPT(E_General, "Win32JoyStick::_enumerate >> Failed to get capabilities");
 
-		mPOVCount = (short)mDIJoyCaps.dwPOVs;
+		mPOVs = short(mDIJoyCaps.dwPOVs);
 
-        mButtonCount = std::min<int>(JoyStickState::MAX_BUTTONS, mDIJoyCaps.dwButtons);
-		mAxisCount = std::min<int>(JoyStickState::MAX_AXES, mDIJoyCaps.dwAxes);
+		mState.mButtons.resize(mDIJoyCaps.dwButtons);
+		mState.mAxes.resize(mDIJoyCaps.dwAxes);
 
 		//Reset the axis mapping enumeration value
 		_AxisNumber = 0;
@@ -191,10 +189,10 @@ BOOL CALLBACK Win32JoyStick::DIEnumDeviceObjectsCallback(LPCDIDEVICEOBJECTINSTAN
 	//Check if axis is slider, if so, do not treat as regular axis
 	if(GUID_Slider == lpddoi->guidType)
 	{
-		++_this->mSliderCount;
+		++_this->mSliders;
 
 		//Decrease Axes, since this slider shows up in a different place
-		--_this->mAxisCount;
+		_this->mState.mAxes.pop_back();
 	}
 	else if(FAILED(_this->mJoyStick->SetProperty(DIPROP_APPDATA, &diptr.diph)))
 	{ //If for some reason we could not set needed user data, just ignore this axis
@@ -211,8 +209,8 @@ BOOL CALLBACK Win32JoyStick::DIEnumDeviceObjectsCallback(LPCDIDEVICEOBJECTINSTAN
 	diprg.diph.dwHeaderSize = sizeof(DIPROPHEADER);
 	diprg.diph.dwHow		= DIPH_BYID;
 	diprg.diph.dwObj		= lpddoi->dwType;
-	diprg.lMin				= MIN_AXIS_VALUE;
-	diprg.lMax				= MAX_AXIS_VALUE;
+	diprg.lMin				= MIN_AXIS;
+	diprg.lMax				= MAX_AXIS;
 
 	if(FAILED(_this->mJoyStick->SetProperty(DIPROP_RANGE, &diprg.diph)))
 		OIS_EXCEPT(E_General, "Win32JoyStick::_DIEnumDeviceObjectsCallback >> Failed to set min/max range property");
@@ -244,7 +242,7 @@ BOOL CALLBACK Win32JoyStick::DIEnumEffectsCallback(LPCDIEFFECTINFO pdei, LPVOID 
 	Win32JoyStick* _this = (Win32JoyStick*)pvRef;
 
 	//Create the FF instance only after we know there is at least one effect type
-	if(_this->mFfDevice == 0)
+	if(_this->mFfDevice == nullptr)
 		_this->mFfDevice = new Win32ForceFeedback(_this->mJoyStick, &_this->mDIJoyCaps);
 
 	_this->mFfDevice->_addEffectSupport(pdei);
@@ -358,9 +356,9 @@ void Win32JoyStick::capture()
 				else if((short)(diBuff[i].uAppData >> 16) == 0x1313)
 				{													   //If it was nothing else, might be axis enumerated earlier (determined by magic number)
 					int axis = (int)(0x0000FFFF & diBuff[i].uAppData); //Mask out the high bit
-					assert(axis >= 0 && axis < mAxisCount && "Axis out of range!");
+					assert(axis >= 0 && axis < (int)mState.mAxes.size() && "Axis out of range!");
 
-					if(axis >= 0 && axis < mAxisCount)
+					if(axis >= 0 && axis < (int)mState.mAxes.size())
 					{
 						mState.mAxes[axis].abs = diBuff[i].dwData;
 						axisMoved[axis]		   = true;
@@ -379,13 +377,13 @@ void Win32JoyStick::capture()
 		//Update axes
 		for(int i = 0; i < 24; ++i)
 			if(axisMoved[i])
-				if(mListener->axisMoved(temp, i) == false)
+				if(!mListener->axisMoved(temp, i))
 					return;
 
 		//Now update sliders
 		for(int i = 0; i < 4; ++i)
 			if(sliderMoved[i])
-				if(mListener->sliderMoved(temp, i) == false)
+				if(!mListener->sliderMoved(temp, i))
 					return;
 	}
 }
@@ -431,8 +429,8 @@ void Win32JoyStick::captureXInput()
 
 	//Left trigger
 	value = inputState.Gamepad.bLeftTrigger * 129;
-	if(value > JoyStick::MAX_AXIS_VALUE)
-		value = JoyStick::MAX_AXIS_VALUE;
+	if(value > JoyStick::MAX_AXIS)
+		value = JoyStick::MAX_AXIS;
 
 	mState.mAxes[4].rel = value - mState.mAxes[4].abs;
 	mState.mAxes[4].abs = value;
@@ -441,8 +439,8 @@ void Win32JoyStick::captureXInput()
 
 	//Right trigger
 	value = (int)inputState.Gamepad.bRightTrigger * 129;
-	if(value > JoyStick::MAX_AXIS_VALUE)
-		value = JoyStick::MAX_AXIS_VALUE;
+	if(value > JoyStick::MAX_AXIS)
+		value = JoyStick::MAX_AXIS;
 
 	mState.mAxes[5].rel = value - mState.mAxes[5].abs;
 	mState.mAxes[5].abs = value;
@@ -450,8 +448,8 @@ void Win32JoyStick::captureXInput()
 		axisMoved[5] = true;
 
 	//POV
-	int previousPov = mState.mPOVs[0].direction;
-	int& pov		= mState.mPOVs[0].direction;
+	int previousPov = mState.mPOV[0].direction;
+	int& pov		= mState.mPOV[0].direction;
 	pov				= Pov::Centered;
 	if(inputState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP)
 		pov |= Pov::North;
@@ -463,7 +461,8 @@ void Win32JoyStick::captureXInput()
 		pov |= Pov::East;
 
 	//Buttons - The first 4 buttons don't need to be checked since they represent the dpad
-	std::bitset<JoyStickState::MAX_BUTTONS> previousButtons = mState.mButtons;
+	bool previousButtons[XINPUT_TRANSLATED_BUTTON_COUNT];
+	std::copy(mState.mButtons.begin(), mState.mButtons.end(), previousButtons);
 	for(size_t i = 0; i < XINPUT_TRANSLATED_BUTTON_COUNT; i++)
 		mState.mButtons[i] = (inputState.Gamepad.wButtons & (1 << (i + 4))) != 0;
 
@@ -527,20 +526,20 @@ bool Win32JoyStick::_changePOV(int pov, DIDEVICEOBJECTDATA& di)
 	//for the center position
 	if(LOWORD(di.dwData) == 0xFFFF)
 	{
-		mState.mPOVs[pov].direction = Pov::Centered;
+		mState.mPOV[pov].direction = Pov::Centered;
 	}
 	else
 	{
 		switch(di.dwData)
 		{
-			case 0: mState.mPOVs[pov].direction = Pov::North; break;
-			case 4500: mState.mPOVs[pov].direction = Pov::NorthEast; break;
-			case 9000: mState.mPOVs[pov].direction = Pov::East; break;
-			case 13500: mState.mPOVs[pov].direction = Pov::SouthEast; break;
-			case 18000: mState.mPOVs[pov].direction = Pov::South; break;
-			case 22500: mState.mPOVs[pov].direction = Pov::SouthWest; break;
-			case 27000: mState.mPOVs[pov].direction = Pov::West; break;
-			case 31500: mState.mPOVs[pov].direction = Pov::NorthWest; break;
+			case 0: mState.mPOV[pov].direction = Pov::North; break;
+			case 4500: mState.mPOV[pov].direction = Pov::NorthEast; break;
+			case 9000: mState.mPOV[pov].direction = Pov::East; break;
+			case 13500: mState.mPOV[pov].direction = Pov::SouthEast; break;
+			case 18000: mState.mPOV[pov].direction = Pov::South; break;
+			case 22500: mState.mPOV[pov].direction = Pov::SouthWest; break;
+			case 27000: mState.mPOV[pov].direction = Pov::West; break;
+			case 31500: mState.mPOV[pov].direction = Pov::NorthWest; break;
 		}
 	}
 
@@ -557,25 +556,25 @@ void Win32JoyStick::setBuffered(bool buffered)
 }
 
 //--------------------------------------------------------------------------------------------------//
-Interface* Win32JoyStick::queryInterface(Interface::Type type)
+Interface* Win32JoyStick::queryInterface(Interface::IType type)
 {
-	if(mFfDevice && type == Interface::TypeForceFeedback)
+	if(mFfDevice && type == Interface::ForceFeedback)
 		return mFfDevice;
 	else
-		return 0;
+		return nullptr;
 }
 
 //--------------------------------------------------------------------------------------------------//
 #ifdef OIS_WIN32_XINPUT_SUPPORT
 void Win32JoyStick::CheckXInputDevices(JoyStickInfoList& joys)
 {
-	IWbemLocator* pIWbemLocator		   = NULL;
-	IEnumWbemClassObject* pEnumDevices = NULL;
-	IWbemClassObject* pDevices[20]	 = { 0 };
-	IWbemServices* pIWbemServices	  = NULL;
-	BSTR bstrNamespace				   = NULL;
-	BSTR bstrDeviceID				   = NULL;
-	BSTR bstrClassName				   = NULL;
+	IWbemLocator* pIWbemLocator		   = nullptr;
+	IEnumWbemClassObject* pEnumDevices = nullptr;
+	IWbemClassObject* pDevices[20]	 = { nullptr };
+	IWbemServices* pIWbemServices	  = nullptr;
+	BSTR bstrNamespace				   = nullptr;
+	BSTR bstrDeviceID				   = nullptr;
+	BSTR bstrClassName				   = nullptr;
 	DWORD uReturned					   = 0;
 	bool bIsXinputDevice			   = false;
 	DWORD iDevice					   = 0;
@@ -583,40 +582,40 @@ void Win32JoyStick::CheckXInputDevices(JoyStickInfoList& joys)
 	VARIANT var;
 	HRESULT hr;
 
-	if(joys.size() == 0)
+	if(joys.empty())
 		return;
 
 	// CoInit if needed
-	hr				 = CoInitialize(NULL);
+	hr				 = CoInitialize(nullptr);
 	bool bCleanupCOM = SUCCEEDED(hr);
 
 	// Create WMI
-	hr = CoCreateInstance(__uuidof(WbemLocator), NULL, CLSCTX_INPROC_SERVER, __uuidof(IWbemLocator), (LPVOID*)&pIWbemLocator);
-	if(FAILED(hr) || pIWbemLocator == NULL)
+	hr = CoCreateInstance(__uuidof(WbemLocator), nullptr, CLSCTX_INPROC_SERVER, __uuidof(IWbemLocator), (LPVOID*)&pIWbemLocator);
+	if(FAILED(hr) || pIWbemLocator == nullptr)
 		goto LCleanup;
 
 	bstrNamespace = SysAllocString(L"\\\\.\\root\\cimv2");
-	if(bstrNamespace == NULL)
+	if(bstrNamespace == nullptr)
 		goto LCleanup;
 
 	bstrClassName = SysAllocString(L"Win32_PNPEntity");
-	if(bstrClassName == NULL)
+	if(bstrClassName == nullptr)
 		goto LCleanup;
 
 	bstrDeviceID = SysAllocString(L"DeviceID");
-	if(bstrDeviceID == NULL)
+	if(bstrDeviceID == nullptr)
 		goto LCleanup;
 
 	// Connect to WMI
-	hr = pIWbemLocator->ConnectServer(bstrNamespace, NULL, NULL, 0L, 0L, NULL, NULL, &pIWbemServices);
-	if(FAILED(hr) || pIWbemServices == NULL)
+	hr = pIWbemLocator->ConnectServer(bstrNamespace, nullptr, nullptr, nullptr, 0L, nullptr, nullptr, &pIWbemServices);
+	if(FAILED(hr) || pIWbemServices == nullptr)
 		goto LCleanup;
 
 	// Switch security level to IMPERSONATE.
-	CoSetProxyBlanket(pIWbemServices, RPC_C_AUTHN_WINNT, RPC_C_AUTHZ_NONE, NULL, RPC_C_AUTHN_LEVEL_CALL, RPC_C_IMP_LEVEL_IMPERSONATE, NULL, EOAC_NONE);
+	CoSetProxyBlanket(pIWbemServices, RPC_C_AUTHN_WINNT, RPC_C_AUTHZ_NONE, nullptr, RPC_C_AUTHN_LEVEL_CALL, RPC_C_IMP_LEVEL_IMPERSONATE, nullptr, EOAC_NONE);
 
-	hr = pIWbemServices->CreateInstanceEnum(bstrClassName, 0, NULL, &pEnumDevices);
-	if(FAILED(hr) || pEnumDevices == NULL)
+	hr = pIWbemServices->CreateInstanceEnum(bstrClassName, 0, nullptr, &pEnumDevices);
+	if(FAILED(hr) || pEnumDevices == nullptr)
 		goto LCleanup;
 
 	// Loop over all devices
@@ -633,8 +632,8 @@ void Win32JoyStick::CheckXInputDevices(JoyStickInfoList& joys)
 		for(iDevice = 0; iDevice < uReturned; iDevice++)
 		{
 			// For each device, get its device ID
-			hr = pDevices[iDevice]->Get(bstrDeviceID, 0L, &var, NULL, NULL);
-			if(SUCCEEDED(hr) && var.vt == VT_BSTR && var.bstrVal != NULL)
+			hr = pDevices[iDevice]->Get(bstrDeviceID, 0L, &var, nullptr, nullptr);
+			if(SUCCEEDED(hr) && var.vt == VT_BSTR && var.bstrVal != nullptr)
 			{
 				// Check if the device ID contains "IG_".  If it does, then it's an XInput device - This information can not be found from DirectInput
 				if(wcsstr(var.bstrVal, L"IG_"))
@@ -661,7 +660,7 @@ void Win32JoyStick::CheckXInputDevices(JoyStickInfoList& joys)
 						}
 					}
 
-					if(joys.size() == 0)
+					if(joys.empty())
 						goto LCleanup;
 				}
 			}
